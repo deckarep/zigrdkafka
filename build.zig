@@ -15,20 +15,6 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
-        .name = "kafkazig",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // This declares intent for the library to be installed into the standard
-    // location when the user invokes the "install" step (the default step when
-    // running `zig build`).
-    b.installArtifact(lib);
-
     const exe = b.addExecutable(.{
         .name = "kafkazig",
         .root_source_file = b.path("src/main.zig"),
@@ -38,22 +24,13 @@ pub fn build(b: *std.Build) void {
 
     exe.linkSystemLibrary("c");
 
-    // Link with openssl: ensure brew install openssl!
-    // Open ssl not found with below.
-    // exe.linkSystemLibrary("ssl");
-    // exe.linkSystemLibrary("crypto");
-
     // OpenSSL => brew install openssl
     exe.addIncludePath(.{ .cwd_relative = "/opt/homebrew/opt/openssl@3/include" });
-    //exe.addSystemIncludePath(.{ .cwd_relative = "/opt/homebrew/opt/openssl@3/include" });
     exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/opt/openssl@3/lib" });
     exe.linkSystemLibrary("crypto");
     exe.linkSystemLibrary("ssl");
-    // exe.addSystemIncludePath(.{ .cwd_relative = "/opt/homebrew/opt/openssl@3/include" });
-    // exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/opt/openssl@3/lib" });
 
     // Curl => brew install curl
-    //exe.addSystemIncludePath(.{ .cwd_relative = "/opt/homebrew/opt/curl/include" });
     exe.addIncludePath(.{ .cwd_relative = "/opt/homebrew/opt/curl/include" });
     exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/opt/curl/lib" });
     exe.linkSystemLibrary("curl");
@@ -63,6 +40,11 @@ pub fn build(b: *std.Build) void {
     exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/opt/zlib/lib" });
     exe.linkSystemLibrary("zlib");
 
+    // Zstd => brew install zstd
+    exe.addIncludePath(.{ .cwd_relative = "/opt/homebrew/opt/zstd/include" });
+    exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/opt/zstd/lib" });
+    exe.linkSystemLibrary("zstd");
+
     // cyrus-sasl/libsasl2 => brew install cyrus-sasl
     exe.addIncludePath(.{ .cwd_relative = "/opt/homebrew/opt/cyrus-sasl/include" });
     exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/opt/cyrus-sasl/lib" });
@@ -70,8 +52,9 @@ pub fn build(b: *std.Build) void {
 
     exe.linkLibC();
 
+    // cflags are defined here: https://github.com/confluentinc/librdkafka/blob/master/dev-conf.sh
     const cflags = &[_][]const u8{
-        "-std=c11",
+        "-std=c99",
     };
 
     exe.addIncludePath(b.path("lib/librdkafka/"));
@@ -156,7 +139,7 @@ pub fn build(b: *std.Build) void {
             "lib/librdkafka/src/rdkafka_sasl_oauthbearer_oidc.c",
             "lib/librdkafka/src/rdkafka_sasl_plain.c",
             "lib/librdkafka/src/rdkafka_sasl_scram.c",
-            // Windows only obvi.
+            // Windows only obvi. - include this when building on Windows.
             //"lib/librdkafka/src/rdkafka_sasl_win32.c",
             "lib/librdkafka/src/rdkafka_ssl.c",
             "lib/librdkafka/src/rdkafka_sticky_assignor.c",
@@ -168,8 +151,7 @@ pub fn build(b: *std.Build) void {
             "lib/librdkafka/src/rdkafka_topic.c",
             "lib/librdkafka/src/rdkafka_transport.c",
             "lib/librdkafka/src/rdkafka_txnmgr.c",
-            // Optional, so skipping for now.
-            //"lib/librdkafka/src/rdkafka_zstd.c",
+            "lib/librdkafka/src/rdkafka_zstd.c",
             "lib/librdkafka/src/tinycthread.c",
             "lib/librdkafka/src/tinycthread_extra.c",
         },
@@ -204,16 +186,6 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
 
-    // Creates a step for unit testing. This only builds the test executable
-    // but does not run it.
-    const lib_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
-
     const exe_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
@@ -226,6 +198,5 @@ pub fn build(b: *std.Build) void {
     // the `zig build --help` menu, providing a way for the user to request
     // running the unit tests.
     const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
 }

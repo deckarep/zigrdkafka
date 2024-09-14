@@ -1,4 +1,8 @@
-## Installing
+## zigrdkafka
+This is librdkafka under the command and control of Zig. This project
+requires Zig 0.13 and is developed on MacOS aarch64.
+
+## Getting up and running
 
 ```sh
 # 1. Clone this repo and pull down any submodules.
@@ -15,6 +19,11 @@ cd lib/librdkafka
 ./configure
 cd ../../
 
-# 4. Build and run the zig project.
-zig build run
+# 4. Build all examples projects.
+zig build
+
+# 5. Each of the binaries are now located in: zig-out/bin
+# Example: runs the producer.
+cd zig-out/bin
+./producer
 ```

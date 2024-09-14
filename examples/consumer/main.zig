@@ -9,6 +9,8 @@ const KafkaError = error{
     Instantiation,
 };
 
+// Somewhat based on the original raw C example: https://github.com/confluentinc/librdkafka/blob/master/examples/consumer.c
+
 pub fn main() !void {
     std.log.info("all your bases..blah, blah...", .{});
 

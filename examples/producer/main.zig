@@ -22,77 +22,93 @@ pub fn main() !void {
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
     const brokers = "localhost:9092";
-    var errStr: [512]u8 = undefined;
-    const pErrStr: [*c]u8 = @ptrCast(&errStr);
+    //var errStr: [512]u8 = undefined;
+    //const pErrStr: [*c]u8 = @ptrCast(&errStr);
 
     // Kafka configuration
-    const conf = c_rdk.rd_kafka_conf_new();
+    // Real api.
+    //const conf = c_rdk.rd_kafka_conf_new();
+    // Wrapper api using extern
+    const conf = conf_new();
+    defer conf.destroy();
 
-    if (c_rdk.rd_kafka_conf_set(conf, "bootstrap.servers", brokers, pErrStr, errStr.len) != c_rdk.RD_KAFKA_CONF_OK) {
-        _ = std.c.printf("Error setting conf: %s\n", pErrStr);
-        return;
-    }
+    const confCopy = conf.dup();
+    defer confCopy.destroy();
 
-    // Set logger
-    c_rdk.rd_kafka_conf_set_log_cb(conf, logger);
-    if (conf) |c| {
-        dumpConfig(c);
-    }
+    conf.set("bootstrap.servers", brokers);
+    conf.set("batch.num.messages", "500");
 
-    // Set delivery report callback.
-    c_rdk.rd_kafka_conf_set_dr_msg_cb(conf, deliveryReportCallback);
+    //conf_set(conf, "bootstrap.servers", brokers);
+    //std.log.info("printing conf: {?}", .{conf});
 
-    const rk = c_rdk.rd_kafka_new(c_rdk.RD_KAFKA_PRODUCER, conf, pErrStr, errStr.len);
-    if (rk == null) {
-        _ = std.c.printf("Failed to create a new producer: %s\n", pErrStr);
-        return;
-    }
+    conf.dump();
+    confCopy.dump();
 
-    // Create topic config.
-    const topic_conf = c_rdk.rd_kafka_topic_conf_new();
-    var res = c_rdk.RD_KAFKA_CONF_UNKNOWN;
-    res = c_rdk.rd_kafka_topic_conf_set(topic_conf, "acks", "-1", pErrStr, errStr.len);
-    if (res != c_rdk.RD_KAFKA_CONF_OK) {
-        _ = std.c.printf("failed to set the kakfa topic conf with err: %s\n", pErrStr);
-        return;
-    }
+    // if (c_rdk.rd_kafka_conf_set(conf, "bootstrap.servers", brokers, pErrStr, errStr.len) != c_rdk.RD_KAFKA_CONF_OK) {
+    //     _ = std.c.printf("Error setting conf: %s\n", pErrStr);
+    //     return;
+    // }
 
-    // Create the topic handle.
-    const rkt = c_rdk.rd_kafka_topic_new(rk, "topic.foo", topic_conf);
-    defer c_rdk.rd_kafka_topic_destroy(rkt);
+    // // Set logger
+    // c_rdk.rd_kafka_conf_set_log_cb(conf, logger);
+    // if (conf) |c| {
+    //     dumpConfig(c);
+    // }
 
-    var buf: [512]u8 = undefined;
-    var counter: usize = 0;
+    // // Set delivery report callback.
+    // c_rdk.rd_kafka_conf_set_dr_msg_cb(conf, deliveryReportCallback);
 
-    while (true) {
-        const msg = try std.fmt.bufPrint(buf[0..], "Here is message: {d}", .{counter});
+    // const rk = c_rdk.rd_kafka_new(c_rdk.RD_KAFKA_PRODUCER, conf, pErrStr, errStr.len);
+    // if (rk == null) {
+    //     _ = std.c.printf("Failed to create a new producer: %s\n", pErrStr);
+    //     return;
+    // }
 
-        _ = c_rdk.rd_kafka_produce(
-            // Producer handle
-            rkt,
-            // Topic name
-            c_rdk.RD_KAFKA_PARTITION_UA,
-            // Make a copy of the payload.
-            c_rdk.RD_KAFKA_MSG_F_COPY,
-            // Message value and length
-            @ptrCast(msg),
-            // Per-Message opaque, provided in
-            // delivery report callback as
-            // msg_opaque.
-            msg.len,
-            // Key is an optional message key.
-            "fart",
-            // keylen is the optional message key len.
-            4,
-            // Optional opaque pointer, that is provided in delivery report callback.
-            null,
-        );
+    // // Create topic config.
+    // const topic_conf = c_rdk.rd_kafka_topic_conf_new();
+    // var res = c_rdk.RD_KAFKA_CONF_UNKNOWN;
+    // res = c_rdk.rd_kafka_topic_conf_set(topic_conf, "acks", "-1", pErrStr, errStr.len);
+    // if (res != c_rdk.RD_KAFKA_CONF_OK) {
+    //     _ = std.c.printf("failed to set the kakfa topic conf with err: %s\n", pErrStr);
+    //     return;
+    // }
 
-        counter += 1;
+    // // Create the topic handle.
+    // const rkt = c_rdk.rd_kafka_topic_new(rk, "topic.foo", topic_conf);
+    // defer c_rdk.rd_kafka_topic_destroy(rkt);
 
-        std.log.info("doing something...", .{});
-        std.time.sleep(std.time.ns_per_ms * 10);
-    }
+    // var buf: [512]u8 = undefined;
+    // var counter: usize = 0;
+
+    // while (true) {
+    //     const msg = try std.fmt.bufPrint(buf[0..], "Here is message: {d}", .{counter});
+
+    //     _ = c_rdk.rd_kafka_produce(
+    //         // Producer handle
+    //         rkt,
+    //         // Topic name
+    //         c_rdk.RD_KAFKA_PARTITION_UA,
+    //         // Make a copy of the payload.
+    //         c_rdk.RD_KAFKA_MSG_F_COPY,
+    //         // Message value and length
+    //         @ptrCast(msg),
+    //         // Per-Message opaque, provided in
+    //         // delivery report callback as
+    //         // msg_opaque.
+    //         msg.len,
+    //         // Key is an optional message key.
+    //         "fart",
+    //         // keylen is the optional message key len.
+    //         4,
+    //         // Optional opaque pointer, that is provided in delivery report callback.
+    //         null,
+    //     );
+
+    //     counter += 1;
+
+    //     std.log.info("doing something...", .{});
+    //     std.time.sleep(std.time.ns_per_ms * 10);
+    // }
 
     // Topic configuration
     // const topic_conf = c_rdk.rd_kafka_topic_conf_new();
@@ -100,6 +116,59 @@ pub fn main() !void {
 
     // var res = c_rdk.RD_KAFKA_CONF_UNKNOWN;
     // res = c_rdk.rd_kafka_topic_conf_set(topic_conf, "topic.foo", "bar", pErrStr, errStr.len);
+}
+
+// NOTE: in order to do this like Raylib, I need to control the externs
+// When I define the externs I need to swap out librdkafka types for the shimmed types I define.
+// See this file: https://github.com/Not-Nik/raylib-zig/blob/devel/lib/raylib-ext.zig
+// Importing automatigically with Zig only gets you so far.
+
+pub const Conf = extern struct {
+    pub fn destroy(self: *Conf) void {
+        rd_kafka_conf_destroy(self);
+    }
+
+    pub fn dup(self: *const Conf) *Conf {
+        return rd_kafka_conf_dup(self);
+    }
+
+    pub fn set(self: *Conf, name: []const u8, value: []const u8) void {
+        var errStr: [512]u8 = undefined;
+        const pErrStr: [*c]u8 = @ptrCast(&errStr);
+        const result = rd_kafka_conf_set(self, @ptrCast(name), @ptrCast(value), pErrStr, errStr.len);
+
+        std.log.info("result => {d}", .{result});
+    }
+
+    pub fn dump(self: *const Conf) void {
+        var cnt: usize = undefined;
+        const arr = rd_kafka_conf_dump(self, &cnt);
+        defer c_rdk.rd_kafka_conf_dump_free(arr, cnt);
+
+        std.log.info(">>>> dump <<<<", .{});
+        var i: usize = 0;
+        while (i < cnt) : (i += 2) {
+            std.log.info("{s} = {s}", .{ arr[i], arr[i + 1] });
+        }
+    }
+};
+
+// librdkafka "conf" externs.
+pub extern "c" fn rd_kafka_conf_new() *Conf;
+pub extern "c" fn rd_kafka_conf_set(conf: *Conf, name: [*c]const u8, value: [*c]const u8, errStr: [*c]u8, s: usize) c_rdk.rd_kafka_conf_res_t;
+pub extern "c" fn rd_kafka_conf_destroy(conf: *const Conf) void;
+pub extern "c" fn rd_kafka_conf_dup(conf: *const Conf) *Conf;
+pub extern "c" fn rd_kafka_conf_dump(conf: *const Conf, count: [*c]usize) [*c][*c]const u8;
+
+fn conf_new() *Conf {
+    return rd_kafka_conf_new();
+}
+
+fn conf_set(conf: *Conf, name: []const u8, value: []const u8) void {
+    var errStr: [512]u8 = undefined;
+    const pErrStr: [*c]u8 = @ptrCast(&errStr);
+    const result = rd_kafka_conf_set(conf, @ptrCast(name), @ptrCast(value), pErrStr, errStr.len);
+    std.log.info("result => {d}", .{result});
 }
 
 fn deliveryReportCallback(_: ?*c_rdk.rd_kafka_t, rkmessage: [*c]const c_rdk.rd_kafka_message_t, _: ?*anyopaque) callconv(.C) void {
@@ -117,9 +186,11 @@ fn logger(rk: ?*const c_rdk.struct_rd_kafka_s, level: c_int, fac: [*c]const u8, 
     }
 }
 
-fn dumpConfig(conf: *c_rdk.struct_rd_kafka_conf_s) void {
+//fn dumpConfig(conf: *c_rdk.struct_rd_kafka_conf_s) void {
+fn dumpConfig(conf: *Conf) void {
     var cnt: usize = undefined;
-    const arr = c_rdk.rd_kafka_conf_dump(conf, &cnt);
+    //const arr = c_rdk.rd_kafka_conf_dump(conf, &cnt);
+    const arr = rd_kafka_conf_dump(conf, &cnt);
     defer c_rdk.rd_kafka_conf_dump_free(arr, cnt);
 
     var i: usize = 0;

@@ -113,9 +113,11 @@ fn new_consumer(conf: *c_rdk.struct_rd_kafka_conf_s, err: []u8) !*c_rdk.struct_r
 }
 
 fn close_consumer(c: *c_rdk.rd_kafka_t) void {
+    std.log.debug("closing the consumer...");
     c_rdk.rd_kafka_consumer_close(c);
 }
 
 fn destroy_client(c: *c_rdk.rd_kafka_t) void {
+    std.log.debug("destroy the client...");
     c_rdk.rd_kafka_destroy(c);
 }

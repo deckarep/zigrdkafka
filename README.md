@@ -27,3 +27,17 @@ zig build
 cd zig-out/bin
 ./producer
 ```
+
+## Dev notes
+
+1. Ideally I will build a 1st class Zig-flavored wrapper
+2. Big question: attempt auto-generation???
+3. All C ugliness would be hidden away
+  * Zig namespacing more lightweight. Example: `c.rd_kafka_conf_set` => `z.Conf.set` (something like this)
+  * Only Zig style strings: `[]const u8`
+  * Matching Zig `extern` structs passed around, no C structs insight.
+  * Zig-based structs would may have "methods" where it makes sense
+  * No `[*c]` tags anywhere
+  * C-based #defines, enums converted to Zig enums
+  * C-based `_destroy()` => `.deinit()`
+  * Use of Zig-flavored callbacks so user doesn't need to declare fn with `callconv(.C)`. Is this doable?

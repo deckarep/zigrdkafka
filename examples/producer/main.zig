@@ -1,7 +1,8 @@
 const std = @import("std");
-const c_rdk = @cImport({
-    @cInclude("rdkafka.h");
-});
+const zrdk = @import("zigrdkafka");
+// const c_rdk = @cImport({
+//     @cInclude("rdkafka.h");
+// });
 
 // Configuration: /opt/homebrew/etc/kafka/server.properties
 
@@ -22,6 +23,42 @@ pub fn main() !void {
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
     const brokers = "localhost:9092";
+
+    const conf = zrdk.Conf.new();
+    defer conf.destroy();
+
+    conf.set("bootstrap.servers", brokers);
+    conf.setLogLevel(.Notice);
+    conf.dump();
+
+    var buf: [2:0]u8 = undefined;
+    var bufSize: usize = buf.len;
+    const key = "bootstrap.servers";
+    // Get a value that we know is there.
+    if (conf.get(key, buf[0..], &bufSize) != zrdk.ConfResult.OK) {
+        std.debug.print("Oh no, {s} is an unknown config!", .{key});
+    } else {
+        if (bufSize > buf.len) {
+            std.debug.print("buffer was too small but the size is: {d}\n", .{bufSize});
+        } else {
+            const p: [*c]u8 = buf[0..bufSize].ptr;
+            _ = std.c.printf("Value found was: %s, for key: %s\n", p, key);
+        }
+    }
+
+    // Get a non-existent value.
+    var buf2: [512:0]u8 = undefined;
+    var bufSize2: usize = buf.len;
+    const unknownName = "p00p";
+    if (conf.get(unknownName, buf2[0..], &bufSize2) != zrdk.ConfResult.OK) {
+        std.debug.print("Oh no, {s} is an .Unknown config!", .{unknownName});
+    } else {
+        const p: [*c]u8 = buf[0..bufSize2].ptr;
+        _ = std.c.printf("Value found was: %s\n", p);
+    }
+
+    // const evFlags = zrdk.EventFlags{ .Dr = true, .Log = true };
+    // conf.set_events(evFlags);
     //var errStr: [512]u8 = undefined;
     //const pErrStr: [*c]u8 = @ptrCast(&errStr);
 
@@ -29,20 +66,20 @@ pub fn main() !void {
     // Real api.
     //const conf = c_rdk.rd_kafka_conf_new();
     // Wrapper api using extern
-    const conf = conf_new();
-    defer conf.destroy();
+    // const conf = conf_new();
+    // defer conf.destroy();
 
-    const confCopy = conf.dup();
-    defer confCopy.destroy();
+    // const confCopy = conf.dup();
+    // defer confCopy.destroy();
 
-    conf.set("bootstrap.servers", brokers);
-    conf.set("batch.num.messages", "500");
+    // conf.set("bootstrap.servers", brokers);
+    // conf.set("batch.num.messages", "500");
 
     //conf_set(conf, "bootstrap.servers", brokers);
     //std.log.info("printing conf: {?}", .{conf});
 
-    conf.dump();
-    confCopy.dump();
+    // conf.dump();
+    // confCopy.dump();
 
     // if (c_rdk.rd_kafka_conf_set(conf, "bootstrap.servers", brokers, pErrStr, errStr.len) != c_rdk.RD_KAFKA_CONF_OK) {
     //     _ = std.c.printf("Error setting conf: %s\n", pErrStr);
@@ -123,78 +160,78 @@ pub fn main() !void {
 // See this file: https://github.com/Not-Nik/raylib-zig/blob/devel/lib/raylib-ext.zig
 // Importing automatigically with Zig only gets you so far.
 
-pub const Conf = extern struct {
-    pub fn destroy(self: *Conf) void {
-        rd_kafka_conf_destroy(self);
-    }
+// pub const Conf = extern struct {
+//     pub fn destroy(self: *Conf) void {
+//         rd_kafka_conf_destroy(self);
+//     }
 
-    pub fn dup(self: *const Conf) *Conf {
-        return rd_kafka_conf_dup(self);
-    }
+//     pub fn dup(self: *const Conf) *Conf {
+//         return rd_kafka_conf_dup(self);
+//     }
 
-    pub fn set(self: *Conf, name: []const u8, value: []const u8) void {
-        var errStr: [512]u8 = undefined;
-        const pErrStr: [*c]u8 = @ptrCast(&errStr);
-        const result = rd_kafka_conf_set(self, @ptrCast(name), @ptrCast(value), pErrStr, errStr.len);
+//     pub fn set(self: *Conf, name: []const u8, value: []const u8) void {
+//         var errStr: [512]u8 = undefined;
+//         const pErrStr: [*c]u8 = @ptrCast(&errStr);
+//         const result = rd_kafka_conf_set(self, @ptrCast(name), @ptrCast(value), pErrStr, errStr.len);
 
-        std.log.info("result => {d}", .{result});
-    }
+//         std.log.info("result => {d}", .{result});
+//     }
 
-    pub fn dump(self: *const Conf) void {
-        var cnt: usize = undefined;
-        const arr = rd_kafka_conf_dump(self, &cnt);
-        defer c_rdk.rd_kafka_conf_dump_free(arr, cnt);
+//     pub fn dump(self: *const Conf) void {
+//         var cnt: usize = undefined;
+//         const arr = rd_kafka_conf_dump(self, &cnt);
+//         defer c_rdk.rd_kafka_conf_dump_free(arr, cnt);
 
-        std.log.info(">>>> dump <<<<", .{});
-        var i: usize = 0;
-        while (i < cnt) : (i += 2) {
-            std.log.info("{s} = {s}", .{ arr[i], arr[i + 1] });
-        }
-    }
-};
+//         std.log.info(">>>> dump <<<<", .{});
+//         var i: usize = 0;
+//         while (i < cnt) : (i += 2) {
+//             std.log.info("{s} = {s}", .{ arr[i], arr[i + 1] });
+//         }
+//     }
+// };
 
-// librdkafka "conf" externs.
-pub extern "c" fn rd_kafka_conf_new() *Conf;
-pub extern "c" fn rd_kafka_conf_set(conf: *Conf, name: [*c]const u8, value: [*c]const u8, errStr: [*c]u8, s: usize) c_rdk.rd_kafka_conf_res_t;
-pub extern "c" fn rd_kafka_conf_destroy(conf: *const Conf) void;
-pub extern "c" fn rd_kafka_conf_dup(conf: *const Conf) *Conf;
-pub extern "c" fn rd_kafka_conf_dump(conf: *const Conf, count: [*c]usize) [*c][*c]const u8;
+// // librdkafka "conf" externs.
+// pub extern "c" fn rd_kafka_conf_new() *Conf;
+// pub extern "c" fn rd_kafka_conf_set(conf: *Conf, name: [*c]const u8, value: [*c]const u8, errStr: [*c]u8, s: usize) c_rdk.rd_kafka_conf_res_t;
+// pub extern "c" fn rd_kafka_conf_destroy(conf: *const Conf) void;
+// pub extern "c" fn rd_kafka_conf_dup(conf: *const Conf) *Conf;
+// pub extern "c" fn rd_kafka_conf_dump(conf: *const Conf, count: [*c]usize) [*c][*c]const u8;
 
-fn conf_new() *Conf {
-    return rd_kafka_conf_new();
-}
+// fn conf_new() *Conf {
+//     return rd_kafka_conf_new();
+// }
 
-fn conf_set(conf: *Conf, name: []const u8, value: []const u8) void {
-    var errStr: [512]u8 = undefined;
-    const pErrStr: [*c]u8 = @ptrCast(&errStr);
-    const result = rd_kafka_conf_set(conf, @ptrCast(name), @ptrCast(value), pErrStr, errStr.len);
-    std.log.info("result => {d}", .{result});
-}
+// fn conf_set(conf: *Conf, name: []const u8, value: []const u8) void {
+//     var errStr: [512]u8 = undefined;
+//     const pErrStr: [*c]u8 = @ptrCast(&errStr);
+//     const result = rd_kafka_conf_set(conf, @ptrCast(name), @ptrCast(value), pErrStr, errStr.len);
+//     std.log.info("result => {d}", .{result});
+// }
 
-fn deliveryReportCallback(_: ?*c_rdk.rd_kafka_t, rkmessage: [*c]const c_rdk.rd_kafka_message_t, _: ?*anyopaque) callconv(.C) void {
-    if (rkmessage.*.err > 0) {
-        _ = std.c.printf("Message delivery failed: %s\n", c_rdk.rd_kafka_err2str(rkmessage.*.err));
-    } else {
-        std.log.info("Message delivered ({d} bytes, partition: {d})", .{ rkmessage.*.len, rkmessage.*.partition });
-    }
-}
+// fn deliveryReportCallback(_: ?*c_rdk.rd_kafka_t, rkmessage: [*c]const c_rdk.rd_kafka_message_t, _: ?*anyopaque) callconv(.C) void {
+//     if (rkmessage.*.err > 0) {
+//         _ = std.c.printf("Message delivery failed: %s\n", c_rdk.rd_kafka_err2str(rkmessage.*.err));
+//     } else {
+//         std.log.info("Message delivered ({d} bytes, partition: {d})", .{ rkmessage.*.len, rkmessage.*.partition });
+//     }
+// }
 
-fn logger(rk: ?*const c_rdk.struct_rd_kafka_s, level: c_int, fac: [*c]const u8, buf: [*c]const u8) callconv(.C) void {
-    const name = c_rdk.rd_kafka_name(rk);
-    if (name != null) {
-        std.log.info("name: {s}, level: {d}, fac: {s}, buf:{s}", .{ name, level, fac, buf });
-    }
-}
+// fn logger(rk: ?*const c_rdk.struct_rd_kafka_s, level: c_int, fac: [*c]const u8, buf: [*c]const u8) callconv(.C) void {
+//     const name = c_rdk.rd_kafka_name(rk);
+//     if (name != null) {
+//         std.log.info("name: {s}, level: {d}, fac: {s}, buf:{s}", .{ name, level, fac, buf });
+//     }
+// }
 
-//fn dumpConfig(conf: *c_rdk.struct_rd_kafka_conf_s) void {
-fn dumpConfig(conf: *Conf) void {
-    var cnt: usize = undefined;
-    //const arr = c_rdk.rd_kafka_conf_dump(conf, &cnt);
-    const arr = rd_kafka_conf_dump(conf, &cnt);
-    defer c_rdk.rd_kafka_conf_dump_free(arr, cnt);
+// //fn dumpConfig(conf: *c_rdk.struct_rd_kafka_conf_s) void {
+// fn dumpConfig(conf: *Conf) void {
+//     var cnt: usize = undefined;
+//     //const arr = c_rdk.rd_kafka_conf_dump(conf, &cnt);
+//     const arr = rd_kafka_conf_dump(conf, &cnt);
+//     defer c_rdk.rd_kafka_conf_dump_free(arr, cnt);
 
-    var i: usize = 0;
-    while (i < cnt) : (i += 2) {
-        std.debug.print("{s} = {s}\n", .{ arr[i], arr[i + 1] });
-    }
-}
+//     var i: usize = 0;
+//     while (i < cnt) : (i += 2) {
+//         std.debug.print("{s} = {s}\n", .{ arr[i], arr[i + 1] });
+//     }
+// }

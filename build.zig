@@ -1,10 +1,61 @@
 const std = @import("std");
+const this = @This();
 
 const Program = struct {
     name: []const u8,
     path: []const u8,
     desc: []const u8,
 };
+
+// var _zigrdkafka_lib_cache: ?*std.Build.Step.Compile = null;
+// fn getZigrdkafka(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.Mode) *std.Build.Step.Compile {
+//     if (_zigrdkafka_lib_cache) |lib| return lib else {
+//         const zigrdkafka = b.dependency("zigrdkafka", .{
+//             .target = target,
+//             .optimize = optimize,
+//         });
+
+//         const lib = zigrdkafka.artifact("zigrdkafka");
+
+//         // const raygui_dep = b.dependency("raygui", .{
+//         //     .target = target,
+//         //     .optimize = optimize,
+//         // });
+
+//         var gen_step = b.addWriteFiles();
+//         lib.step.dependOn(&gen_step.step);
+
+//         // const raygui_c_path = gen_step.add("raygui.c", "#define RAYGUI_IMPLEMENTATION\n#include \"raygui.h\"\n");
+//         // lib.addCSourceFile(.{
+//         //     .file = raygui_c_path,
+//         //     .flags = &[_][]const u8{
+//         //         "-std=gnu99",
+//         //         "-D_GNU_SOURCE",
+//         //         "-DGL_SILENCE_DEPRECATION=199309L",
+//         //         "-fno-sanitize=undefined", // https://github.com/raysan5/raylib/issues/3674
+//         //     },
+//         // });
+//         //lib.addIncludePath(raylib.path("src"));
+//         //lib.addIncludePath(raygui_dep.path("src"));
+
+//         //lib.installHeader(raygui_dep.path("src/raygui.h"), "raygui.h");
+
+//         b.installArtifact(lib);
+//         _zigrdkafka_lib_cache = lib;
+//         return lib;
+//     }
+// }
+
+fn getModule(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.Mode) *std.Build.Module {
+    if (b.modules.contains("zigrdkafka")) {
+        return b.modules.get("zigrdkafka").?;
+    }
+    return b.addModule("zigrdkafka", .{
+        .root_source_file = b.path("libzig/zigrdkafka.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+}
 
 fn link(
     _: *std.Build,
@@ -53,6 +104,8 @@ fn link(
             unreachable;
         },
     }
+
+    //exe.linkLibrary(lib);
 }
 
 pub fn build(b: *std.Build) void {
@@ -80,6 +133,8 @@ pub fn build(b: *std.Build) void {
         },
     };
 
+    const zigrdkafka = this.getModule(b, target, optimize);
+
     for (examples) |ex| {
         const exe = b.addExecutable(.{
             .name = ex.name,
@@ -89,6 +144,7 @@ pub fn build(b: *std.Build) void {
         });
 
         link(b, exe, target, optimize);
+        exe.root_module.addImport("zigrdkafka", zigrdkafka);
 
         // cflags are defined here: https://github.com/confluentinc/librdkafka/blob/master/dev-conf.sh
         const cflags = &[_][]const u8{

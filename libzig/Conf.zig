@@ -78,11 +78,10 @@ pub const Conf = struct {
     }
 
     pub fn set(self: Conf, name: [*:0]const u8, value: [*:0]const u8) ConfResultError!void {
-        //TODO: allow user to get an error string somehow.
         var errStr: [512]u8 = undefined;
         const pErrStr: [*c]u8 = @ptrCast(&errStr);
 
-        const result = c.rd_kafka_conf_set(
+        const res = c.rd_kafka_conf_set(
             self.cHandle,
             @ptrCast(name),
             @ptrCast(value),
@@ -90,9 +89,21 @@ pub const Conf = struct {
             errStr.len,
         );
 
-        // TODO: handle the error appropriately.
-        if (result != c.RD_KAFKA_CONF_OK) {
-            std.log.err("result => {?}", .{result});
+        switch (res) {
+            c.RD_KAFKA_CONF_INVALID => {
+                const err = std.mem.span(pErrStr);
+                std.log.err("Err setting configuration key: {s}", .{err});
+                return ConfResultError.Invalid;
+            },
+            c.RD_KAFKA_CONF_UNKNOWN => {
+                const err = std.mem.span(pErrStr);
+                std.log.err("Err setting configuration key: {s}", .{err});
+                return ConfResultError.Unknown;
+            },
+            c.RD_KAFKA_CONF_OK => {
+                return;
+            },
+            else => unreachable,
         }
     }
 

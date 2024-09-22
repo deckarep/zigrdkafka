@@ -3,6 +3,14 @@ const Conf = @import("Conf.zig").Conf;
 const zrdk = @import("zigrdkafka.zig");
 const c = @import("cdef.zig").cdef;
 
+pub const ProduceOptions = struct {
+    partition: i32 = zrdk.RD_KAFKA_PARTITION_UA,
+    flags: c_int = c.RD_KAFKA_MSG_F_COPY,
+    key: ?[]const u8,
+    //key: ?*const anyopaque = null,
+    //keyLen: usize = 0,
+};
+
 pub const Producer = struct {
     cClient: ?*c.rd_kafka_t = undefined,
     conf: Conf,
@@ -62,7 +70,7 @@ pub const Producer = struct {
     //     // }
     // }
 
-    pub fn produce(self: Producer) !void {
+    pub fn produce(self: Producer, message: []const u8, options: ProduceOptions) !void {
         if (self.cClient) |client| {
             // TODO: creating topic config here but shouldn't be done here.
             // Should be passed in.
@@ -73,34 +81,39 @@ pub const Producer = struct {
                 tc,
             );
 
-            var buf: [512]u8 = undefined;
-            const counter: usize = 0;
-            const msg = try std.fmt.bufPrint(buf[0..], "Here is message: {d}", .{counter});
+            var key: ?*const anyopaque = null;
+            var keyLen: usize = 0;
 
-            const key = "fart";
+            if (options.key) |k| {
+                key = @ptrCast(options.key);
+                keyLen = k.len;
+            }
 
-            _ = c.rd_kafka_produce(
+            const res = c.rd_kafka_produce(
                 // Producer handle
                 topic,
                 // Topic name
-                c.RD_KAFKA_PARTITION_UA,
+                options.partition,
                 // Make a copy of the payload.
-                c.RD_KAFKA_MSG_F_COPY,
-                // Message value and length
-                @ptrCast(msg),
+                options.flags,
+                // Message value and length (Zig NOTE: the C api uses void*, so we have to remove constness.)
+                @constCast(@ptrCast(message)),
                 // Per-Message opaque, provided in
                 // delivery report callback as
                 // msg_opaque.
-                msg.len,
+                message.len,
                 // Key is an optional message key.
                 key,
                 // keylen is the optional message key len.
-                key.len,
+                keyLen,
                 // Optional opaque pointer, that is provided in delivery report callback.
+                // TODO: allow for sending this in as well.
                 null,
             );
 
-            std.log.info("one produce call finished..", .{});
+            if (res != c.RD_KAFKA_RESP_ERR_NO_ERROR) {
+                std.log.info("result of produce was => {d}", .{res});
+            }
         }
     }
 };

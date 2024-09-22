@@ -55,11 +55,15 @@ pub fn main() !void {
 
     var count: usize = 0;
     while (true) {
-        std.log.info("about to produce...", .{});
-        try prodClient.produce();
-        std.log.info("finished {d} produce...", .{count});
-        std.time.sleep(std.time.ns_per_ms * 1000);
+        // Create the message.
+        var msgBuf: [128]u8 = undefined;
+        const msg = try std.fmt.bufPrint(&msgBuf, "hello world! {d}", .{count});
 
+        // Produce
+        // TODO: figure out why messages aren't producing unless a key is specified.
+        try prodClient.produce(msg, .{ .key = "p00p" });
+
+        std.time.sleep(std.time.ns_per_ms * 1000);
         count += 1;
     }
 

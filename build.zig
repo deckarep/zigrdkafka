@@ -134,6 +134,11 @@ pub fn build(b: *std.Build) void {
     };
 
     const zigrdkafka = this.getModule(b, target, optimize);
+    // Redundant with adding to exe below?
+    zigrdkafka.addIncludePath(b.path("lib/librdkafka/"));
+    zigrdkafka.addIncludePath(b.path("lib/librdkafka/src"));
+    zigrdkafka.addIncludePath(b.path("lib/librdkafka/src/nanopb"));
+    zigrdkafka.addIncludePath(b.path("lib/librdkafka/src/opentelemetry"));
 
     for (examples) |ex| {
         const exe = b.addExecutable(.{

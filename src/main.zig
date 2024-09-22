@@ -13,6 +13,7 @@
 // brew services stop kafka
 
 // Starting through homebrew cli using kraft (no zookeeper needed) is working.
+// Run the commands below from: /opt/homebrew/bin
 // ./kafka-server-start ../etc/kafka/kraft/server.properties
 
 // CLI tools of consumer

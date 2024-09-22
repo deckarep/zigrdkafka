@@ -1,8 +1,5 @@
 const std = @import("std");
 const zrdk = @import("zigrdkafka");
-// const c_rdk = @cImport({
-//     @cInclude("rdkafka.h");
-// });
 
 // Configuration: /opt/homebrew/etc/kafka/server.properties
 
@@ -18,44 +15,78 @@ const zrdk = @import("zigrdkafka");
 // CLI tools of consumer
 // ./kafka-console-consumer --bootstrap-server "localhost:9092" --topic "topic.foo" ../etc/kafka/kraft/server.properties
 
+fn doSomething() void {
+    // Use this function to force c bindings to be auto generated to help figure out
+    // how the externs should be defined!
+    //     const result = c_auto.rd_kafka_topic_conf_new();
+    //     defer c_auto.rd_kafka_topic_conf_destroy(result);
+}
+
 pub fn main() !void {
+    doSomething();
+
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
+    const serversKey = "bootstrap.servers";
     const brokers = "localhost:9092";
 
-    const conf = zrdk.Conf.new();
-    defer conf.destroy();
+    const conf = try zrdk.Conf.new();
+    //defer conf.deinit(); //<-- don't call this, once given to client, as client owns it.
 
-    conf.set("bootstrap.servers", brokers);
-    conf.setLogLevel(.Notice);
+    // Here is how we can duplicate the Conf object.
+    const otherConf = conf.dup();
+    defer otherConf.deinit();
+
+    try conf.set(serversKey, brokers);
+    try conf.setLogLevel(zrdk.LogLevel.Crit);
     conf.dump();
 
-    var buf: [2:0]u8 = undefined;
-    var bufSize: usize = buf.len;
-    const key = "bootstrap.servers";
-    // Get a value that we know is there.
-    if (conf.get(key, buf[0..], &bufSize) != zrdk.ConfResult.OK) {
-        std.debug.print("Oh no, {s} is an unknown config!", .{key});
-    } else {
-        if (bufSize > buf.len) {
-            std.debug.print("buffer was too small but the size is: {d}\n", .{bufSize});
-        } else {
-            const p: [*c]u8 = buf[0..bufSize].ptr;
-            _ = std.c.printf("Value found was: %s, for key: %s\n", p, key);
-        }
+    otherConf.dump();
+
+    var buf: [128]u8 = undefined;
+    var bufSize: usize = undefined;
+    _ = try conf.get(serversKey, &buf, &bufSize);
+
+    std.log.info("key: {s}, val: {s}", .{ serversKey, buf[0..bufSize] });
+
+    const prodClient = zrdk.Producer.new(conf);
+    defer prodClient.deinit();
+
+    var count: usize = 0;
+    while (true) {
+        std.log.info("about to produce...", .{});
+        try prodClient.produce();
+        std.log.info("finished {d} produce...", .{count});
+        std.time.sleep(std.time.ns_per_ms * 1000);
+
+        count += 1;
     }
 
-    // Get a non-existent value.
-    var buf2: [512:0]u8 = undefined;
-    var bufSize2: usize = buf.len;
-    const unknownName = "p00p";
-    if (conf.get(unknownName, buf2[0..], &bufSize2) != zrdk.ConfResult.OK) {
-        std.debug.print("Oh no, {s} is an .Unknown config!", .{unknownName});
-    } else {
-        const p: [*c]u8 = buf[0..bufSize2].ptr;
-        _ = std.c.printf("Value found was: %s\n", p);
-    }
+    // // Get a non-existent value.
+    // var buf2: [512:0]u8 = undefined;
+    // var bufSize2: usize = buf.len;
+    // const unknownName = "p00p";
+    // if (conf.get(unknownName, buf2[0..], &bufSize2) != zrdk.ConfResult.OK) {
+    //     std.debug.print("Oh no, {s} is an .Unknown config!\n", .{unknownName});
+    // } else {
+    //     const p: [*c]u8 = buf[0..bufSize2].ptr;
+    //     _ = std.c.printf("Value found was: %s\n", p);
+    // }
+
+    // // Create the producer client.
+    // var myProducer = zrdk.Producer.new(conf);
+    // defer myProducer.deinit();
+
+    // var count: usize = 0;
+    // while (true) {
+    //     std.log.info("about to produce...", .{});
+    //     myProducer.produce();
+    //     std.log.info("finished {d} produce...", .{count});
+    //     std.time.sleep(std.time.ns_per_ms * 1000);
+
+    //     count += 1;
+    // }
 
     // const evFlags = zrdk.EventFlags{ .Dr = true, .Log = true };
     // conf.set_events(evFlags);

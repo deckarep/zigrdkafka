@@ -10,7 +10,7 @@ pub fn main() !void {
     for (0..10) |i| {
         const a: i64 = @intCast(i);
         const b: i64 = @intCast(i + 1);
-        testUUID(a, b);
+        try testUUID(a, b);
     }
 
     const brokers = "localhost:9092";
@@ -36,8 +36,8 @@ pub fn main() !void {
     }
 }
 
-pub fn testUUID(first: i64, second: i64) void {
-    const u = zrdk.Uuid.new(first, second);
+pub fn testUUID(first: i64, second: i64) !void {
+    const u = try zrdk.Uuid.new(first, second);
     defer u.deinit();
 
     const str = u.base64Str();

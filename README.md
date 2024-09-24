@@ -1,5 +1,5 @@
 ## zigrdkafka
-All your codebase are belong to us.
+*All your codebase are belong to us.*
 This is `librdkafka`, hijacked and under the command and control of Zig. 
 This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
 
@@ -59,10 +59,10 @@ zig build
 2. Big question: attempt auto-generation???
 3. All C ugliness would be hidden away
   * Zig namespacing more lightweight. Example: `c.rd_kafka_conf_set` => `z.Conf.set` (something like this)
-  * Only Zig style strings: `[]const u8`
-  * Matching Zig `extern` structs passed around, no C structs insight.
+  * Only Zig style strings: `[]const u8` or null-terminated when required: `[:0]const u8`
   * Zig-based structs would may have "methods" where it makes sense
-  * No `[*c]` tags anywhere
+  * No `[*c]` tags anywhere (in-progress)
   * C-based #defines, enums converted to Zig enums
   * C-based `_destroy()` => `.deinit()`
-  * Use of Zig-flavored callbacks so user doesn't need to declare fn with `callconv(.C)`. Is this doable?
+  * Use of Zig-flavored callbacks so user doesn't need to declare fn with `callconv(.C)`.
+  * librdkafka doesn't expose allocators the way Zig prefers, not sure if there is a way around this.

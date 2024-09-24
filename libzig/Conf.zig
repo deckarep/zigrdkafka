@@ -140,6 +140,16 @@ pub const Conf = struct {
         }
     }
 
+    pub fn setOpaque(self: Self, opaquePtr: ?*anyopaque) void {
+        c.rd_kafka_conf_set_opaque(self.cHandle, opaquePtr);
+    }
+
+    pub fn getOpaque(_: Self) ?*anyopaque {
+        // TODO: Hmm, why is this not on the conf object? and the above method is?
+        //return c.rd_kafka_opaque(rk: ?*const rd_kafka_t)
+        return null;
+    }
+
     // TODO: read docs and understand this api.
     // pub fn set_events(self: *Conf, events: EventFlags) void {
     //     cdef.rd_kafka_conf_set_events(self, @intFromEnum(events));

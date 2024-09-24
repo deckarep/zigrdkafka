@@ -6,9 +6,11 @@ const cfg = @import("Conf.zig");
 const prd = @import("Producer.zig");
 const csmr = @import("Consumer.zig");
 const uuid = @import("Uuid.zig");
+const topCfg = @import("TopicConf.zig");
 
 pub const ConfResult = cfg.ConfResult;
 pub const Conf = cfg.Conf;
+pub const TopicConf = topCfg.TopicConf;
 pub const LogLevel = cfg.LogLevel;
 pub const Producer = prd.Producer;
 pub const Consumer = csmr.Consumer;

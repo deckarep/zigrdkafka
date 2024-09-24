@@ -151,3 +151,9 @@ pub const Conf = struct {
     //     cdef.rd_kafka_conf_set_events(self, @intFromEnum(events));
     // }
 };
+
+// TODO: wire up tests.
+test "set a valid value" {
+    const cfg = try Conf.new();
+    defer cfg.deinit();
+}

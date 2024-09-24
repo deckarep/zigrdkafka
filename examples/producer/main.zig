@@ -48,7 +48,7 @@ pub fn main() !void {
     var bufSize: usize = undefined;
     _ = try conf.get(serversKey, &buf, &bufSize);
 
-    std.log.info("key: {s}, val: {s}", .{ serversKey, buf[0..bufSize] });
+    std.log.info("key: {s} => val: {s}", .{ serversKey, buf[0..bufSize] });
 
     const prodClient = zrdk.Producer.new(conf);
     defer prodClient.deinit();

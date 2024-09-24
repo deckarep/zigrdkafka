@@ -4,11 +4,12 @@ const zrdk = @import("zigrdkafka.zig");
 const c = @import("cdef.zig").cdef;
 
 pub const ProduceOptions = struct {
+    /// Which partition to send on, the default is `unassigned`.
     partition: i32 = zrdk.RD_KAFKA_PARTITION_UA,
+    /// Flags to utilize on how the message is handled, the default is `copy`.
     flags: c_int = c.RD_KAFKA_MSG_F_COPY,
+    /// An optional key to send.
     key: ?[]const u8,
-    //key: ?*const anyopaque = null,
-    //keyLen: usize = 0,
 };
 
 pub const Producer = struct {

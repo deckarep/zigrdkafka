@@ -149,6 +149,7 @@ pub fn build(b: *std.Build) void {
         });
 
         link(b, exe, target, optimize);
+
         exe.root_module.addImport("zigrdkafka", zigrdkafka);
 
         // cflags are defined here: https://github.com/confluentinc/librdkafka/blob/master/dev-conf.sh

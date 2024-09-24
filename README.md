@@ -4,10 +4,10 @@ This is `librdkafka`, hijacked and under the command and control of Zig.
 This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
 
 ## Currently Implemented
-  - [x] Conf
-  - [x] TopicConf
-  - [x] Uuid
-  - [x] Producer (in-progress)
+  - [x] Conf ✅
+  - [x] TopicConf ✅
+  - [x] Uuid ✅
+  - [x] Headers (in-progress)
   - [x] Consumer (in-progress)
 
 ## Warning

@@ -72,7 +72,7 @@ pub const Consumer = struct {
         std.log.info("Subscribed to {d} topic(s), waiting for rebalance and messages...", .{topicSubscriptions.*.cnt});
     }
 
-    pub fn do(self: Consumer) void {
+    pub fn do(self: Consumer) !void {
         const msg = c.rd_kafka_consumer_poll(self.cClient, 100);
         if (msg == null) {
             std.log.warn("consumer timeout occurred, continuing...", .{});

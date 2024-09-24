@@ -22,6 +22,6 @@ pub fn main() !void {
     consumer.subscribe(&topics);
 
     while (true) {
-        consumer.do();
+        try consumer.do();
     }
 }

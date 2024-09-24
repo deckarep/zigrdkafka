@@ -7,7 +7,8 @@ This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
   - [x] Conf ✅
   - [x] TopicConf ✅
   - [x] Uuid ✅
-  - [x] Headers (in-progress)
+  - [x] Topic (in-progress)
+  - [x] Headers collection (in-progress)
   - [x] Consumer (in-progress)
 
 ## Warning

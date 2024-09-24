@@ -23,9 +23,15 @@ cd ../../
 zig build
 
 # 5. Each of the binaries are now located in: zig-out/bin
-# Example: runs the producer.
-cd zig-out/bin
-./producer
+# Example:
+  # a. Prestep: Ensure your Kafka cluster is running. 
+  
+  # b. Navigate to the freshly built binaries.
+  cd zig-out/bin
+  # c. Run the producer in one window.
+  ./producer
+  # d. Run the consumer in another window.
+  ./consumer
 ```
 
 ## Dev notes

@@ -27,6 +27,10 @@ pub const Uuid = struct {
         return Uuid{ .cHandle = copied };
     }
 
+    pub fn Handle(self: Uuid) *c.rd_kafka_Uuid_t {
+        return self.cHandle;
+    }
+
     pub fn base64Str(self: Uuid) ?[]const u8 {
         // Looking at code, this gets tacked onto the internal cHandle Uuid raw C pointer
         // so will get cleaned up upon the UUID being destroyed.

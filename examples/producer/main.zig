@@ -26,7 +26,7 @@ pub fn main() !void {
     //defer conf.deinit(); //<-- don't call this, once given to client, as client owns it.
 
     // Here is how we can duplicate the Conf object.
-    const otherConf = conf.dup();
+    const otherConf = try conf.dup();
     defer otherConf.deinit();
 
     try conf.set(serversKey, brokers);

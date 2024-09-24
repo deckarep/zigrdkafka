@@ -3,19 +3,16 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 
 const cfg = @import("Conf.zig");
+const prd = @import("Producer.zig");
+const csmr = @import("Consumer.zig");
+const uuid = @import("Uuid.zig");
+
 pub const ConfResult = cfg.ConfResult;
 pub const Conf = cfg.Conf;
 pub const LogLevel = cfg.LogLevel;
-
-const prd = @import("Producer.zig");
 pub const Producer = prd.Producer;
-
-const csmr = @import("Consumer.zig");
 pub const Consumer = csmr.Consumer;
-
-const uuid = @import("Uuid.zig");
 pub const Uuid = uuid.Uuid;
-
 pub const RD_KAFKA_PARTITION_UA = c.RD_KAFKA_PARTITION_UA;
 
 pub fn kafkaVersionStr() []const u8 {

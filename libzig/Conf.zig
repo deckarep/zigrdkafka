@@ -13,12 +13,6 @@ pub const LogLevel = enum(u32) {
     Debug = 7,
 };
 
-// pub const ConfResult = enum(c_int) {
-//     Unknown = -2, // Unknown configuration name.
-//     Invalid = -1, // Invalid configuration value.
-//     OK = 0, // Configuration ok.
-// };
-
 pub const ConfResultError = error{
     BufferTooSmall,
     Instantiation,
@@ -27,12 +21,14 @@ pub const ConfResultError = error{
 };
 
 pub const Conf = struct {
-    cHandle: ?*c.rd_kafka_conf_t = null,
+    cHandle: *c.rd_kafka_conf_t = undefined,
 
-    pub fn new() ConfResultError!Conf {
+    const Self = @This();
+
+    pub fn new() ConfResultError!Self {
         const handle = c.rd_kafka_conf_new();
         if (handle) |h| {
-            return Conf{
+            return Self{
                 .cHandle = h,
             };
         } else {
@@ -42,21 +38,19 @@ pub const Conf = struct {
 
     // deinit ensures proper cleanup. Only call this if you did not give this to a Kafka client.
     // Giving it to a Kafka client, the client takes ownership and is responsibile for destory it.
-    pub fn deinit(self: Conf) void {
+    pub fn deinit(self: Self) void {
         self.destroy();
     }
 
-    pub fn Handle(self: Conf) ?*c.rd_kafka_conf_t {
+    pub fn Handle(self: Self) *c.rd_kafka_conf_t {
         return self.cHandle;
     }
 
-    fn destroy(self: Conf) void {
-        if (self.cHandle) |h| {
-            c.rd_kafka_conf_destroy(h);
-        }
+    fn destroy(self: Self) void {
+        c.rd_kafka_conf_destroy(self.cHandle);
     }
 
-    pub fn get(self: Conf, name: [*:0]const u8, dest: []u8, destSize: *usize) ConfResultError!void {
+    pub fn get(self: Self, name: [*:0]const u8, dest: []u8, destSize: *usize) ConfResultError!void {
         const res = c.rd_kafka_conf_get(
             self.cHandle,
             @ptrCast(name),
@@ -77,7 +71,7 @@ pub const Conf = struct {
         }
     }
 
-    pub fn set(self: Conf, name: [*:0]const u8, value: [*:0]const u8) ConfResultError!void {
+    pub fn set(self: Self, name: [*:0]const u8, value: [*:0]const u8) ConfResultError!void {
         var errStr: [512]u8 = undefined;
         const pErrStr: [*c]u8 = @ptrCast(&errStr);
 
@@ -107,16 +101,15 @@ pub const Conf = struct {
         }
     }
 
-    pub fn dup(self: Conf) Conf {
-        if (self.cHandle) |h| {
-            const res = c.rd_kafka_conf_dup(h);
-            return Conf{ .cHandle = res };
-        } else {
-            @panic("Cannot dup Conf because it's not properly initialized!");
+    pub fn dup(self: Self) ConfResultError!Self {
+        const res = c.rd_kafka_conf_dup(self.cHandle);
+        if (res) |h| {
+            return Self{ .cHandle = h };
         }
+        return ConfResultError.Instantiation;
     }
 
-    pub fn dump(self: Conf) void {
+    pub fn dump(self: Self) void {
         var cnt: usize = undefined;
         const arr = c.rd_kafka_conf_dump(self.cHandle, &cnt);
         defer c.rd_kafka_conf_dump_free(arr, cnt);
@@ -133,7 +126,7 @@ pub const Conf = struct {
     // then there is a create_native_config which returns an actual librdkafka config.
     // pub fn remove(self: *conf, name: []const u8) void
 
-    pub fn setLogLevel(self: Conf, lvl: LogLevel) ConfResultError!void {
+    pub fn setLogLevel(self: Self, lvl: LogLevel) ConfResultError!void {
         const keyName = "log_level";
         switch (lvl) {
             .Emerg => try self.set(keyName, "0"),
@@ -147,6 +140,7 @@ pub const Conf = struct {
         }
     }
 
+    // TODO: read docs and understand this api.
     // pub fn set_events(self: *Conf, events: EventFlags) void {
     //     cdef.rd_kafka_conf_set_events(self, @intFromEnum(events));
     // }

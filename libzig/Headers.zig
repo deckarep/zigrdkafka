@@ -25,6 +25,10 @@ pub const Headers = struct {
     }
 
     pub fn deinit(self: Self) void {
+        self.destroy();
+    }
+
+    fn destroy(self: Self) void {
         c.rd_kafka_headers_destroy(self.cHandle);
     }
 

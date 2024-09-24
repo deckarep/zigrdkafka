@@ -2,8 +2,13 @@
 This is librdkafka under the command and control of Zig. This project
 requires Zig 0.13 and is developed on MacOS aarch64.
 
-Note: this lib is under heavy active development and subject to lots of changes.
-It is highly unstable at the moment. ⚠️⚠️ You have been warned ⚠️⚠️ !
+## Warning
+  * This lib is under heavy active development and subject to lots of changes.
+  * It is highly unstable at the moment. ⚠️⚠️ You have been warned ⚠️⚠️ !
+  * The api is far, far, far from complete!
+  * Is it clear you should not use it in production!?!?
+  * Should you even be using Zig in production!?!?
+  * If you are cool, the answer is yes!
 
 ## Getting up and running
 

@@ -3,6 +3,10 @@ const Conf = @import("Conf.zig").Conf;
 const zrdk = @import("zigrdkafka.zig");
 const c = @import("cdef.zig").cdef;
 
+pub const ProducerResultError = error{
+    Instantiation,
+};
+
 pub const ProduceOptions = struct {
     /// Which partition to send on, the default is `unassigned`.
     partition: i32 = zrdk.RD_KAFKA_PARTITION_UA,
@@ -16,8 +20,7 @@ pub const Producer = struct {
     cClient: ?*c.rd_kafka_t = undefined,
     conf: Conf,
 
-    pub fn new(conf: Conf) Producer {
-        // TODO: an error needs to get returned possibly.
+    pub fn new(conf: Conf) ProducerResultError!Producer {
         var errStr: [512]u8 = undefined;
         const pErrStr: [*c]u8 = @ptrCast(&errStr);
 
@@ -29,9 +32,9 @@ pub const Producer = struct {
         );
 
         if (rk == null) {
-            std.log.err("Uh no the kafka handle *rk is null for some reason!\n", .{});
-        } else {
-            std.log.info("rk was nicely created...\n", .{});
+            const err = std.mem.span(pErrStr);
+            std.log.err("Err setting instantiating producer: {s}", .{err});
+            return ProducerResultError.Instantiation;
         }
 
         return Producer{
@@ -40,36 +43,11 @@ pub const Producer = struct {
         };
     }
 
-    pub fn deinit(_: Producer) void {}
-
-    // pub fn new(conf: *Conf) Producer {
-    //     // var errStr: [512]u8 = undefined;
-    //     // const pErrStr: [*c]u8 = @ptrCast(&errStr);
-
-    //     // // TODO: an error needs to get returned possibly.
-
-    //     // const rk = cdef.rd_kafka_new(
-    //     //     .Producer,
-    //     //     conf,
-    //     //     pErrStr,
-    //     //     errStr.len,
-    //     // );
-
-    //     // if (rk == null) {
-    //     //     std.log.err("Uh no the kafka handle *rk is null for some reason!\n", .{});
-    //     // } else {
-    //     //     std.log.info("rk was nicely created...\n", .{});
-    //     // }
-
-    //     // return Producer{ .rk = rk, .cfg = conf };
-    // }
-
-    // pub fn deinit(self: *Producer) void {
-    //     // if (self.rk) |h| {
-    //     //     cdef.rd_kafka_destroy(h);
-    //     //     self.rk = null;
-    //     // }
-    // }
+    pub fn deinit(self: Producer) void {
+        if (self.cClient) |h| {
+            c.rd_kafka_destroy(h);
+        }
+    }
 
     pub fn produce(self: Producer, message: []const u8, options: ProduceOptions) !void {
         if (self.cClient) |client| {

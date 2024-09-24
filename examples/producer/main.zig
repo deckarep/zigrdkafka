@@ -15,17 +15,7 @@ const zrdk = @import("zigrdkafka");
 // CLI tools of consumer
 // ./kafka-console-consumer --bootstrap-server "localhost:9092" --topic "topic.foo" ../etc/kafka/kraft/server.properties
 
-fn doSomething() void {
-    // Use this function to force c bindings to be auto generated to help figure out
-    // how the externs should be defined!
-    //     const result = c_auto.rd_kafka_topic_conf_new();
-    //     defer c_auto.rd_kafka_topic_conf_destroy(result);
-}
-
 pub fn main() !void {
-    doSomething();
-
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
     const serversKey = "bootstrap.servers";
@@ -40,21 +30,21 @@ pub fn main() !void {
 
     try conf.set(serversKey, brokers);
     try conf.setLogLevel(zrdk.LogLevel.Crit);
-    conf.dump();
 
+    conf.dump();
     otherConf.dump();
 
     var buf: [128]u8 = undefined;
     var bufSize: usize = undefined;
-    _ = try conf.get(serversKey, &buf, &bufSize);
+    try conf.get(serversKey, &buf, &bufSize);
 
     std.log.info("key: {s} => val: {s}", .{ serversKey, buf[0..bufSize] });
 
-    const prodClient = zrdk.Producer.new(conf);
+    const prodClient = try zrdk.Producer.new(conf);
     defer prodClient.deinit();
 
     var count: usize = 0;
-    while (true) {
+    while (true and count < 10) {
         // Create the message.
         var msgBuf: [128]u8 = undefined;
         const msg = try std.fmt.bufPrint(&msgBuf, "hello world! {d}", .{count});
@@ -66,31 +56,6 @@ pub fn main() !void {
         std.time.sleep(std.time.ns_per_ms * 1000);
         count += 1;
     }
-
-    // // Get a non-existent value.
-    // var buf2: [512:0]u8 = undefined;
-    // var bufSize2: usize = buf.len;
-    // const unknownName = "p00p";
-    // if (conf.get(unknownName, buf2[0..], &bufSize2) != zrdk.ConfResult.OK) {
-    //     std.debug.print("Oh no, {s} is an .Unknown config!\n", .{unknownName});
-    // } else {
-    //     const p: [*c]u8 = buf[0..bufSize2].ptr;
-    //     _ = std.c.printf("Value found was: %s\n", p);
-    // }
-
-    // // Create the producer client.
-    // var myProducer = zrdk.Producer.new(conf);
-    // defer myProducer.deinit();
-
-    // var count: usize = 0;
-    // while (true) {
-    //     std.log.info("about to produce...", .{});
-    //     myProducer.produce();
-    //     std.log.info("finished {d} produce...", .{count});
-    //     std.time.sleep(std.time.ns_per_ms * 1000);
-
-    //     count += 1;
-    // }
 
     // const evFlags = zrdk.EventFlags{ .Dr = true, .Log = true };
     // conf.set_events(evFlags);
@@ -189,41 +154,6 @@ pub fn main() !void {
     // var res = c_rdk.RD_KAFKA_CONF_UNKNOWN;
     // res = c_rdk.rd_kafka_topic_conf_set(topic_conf, "topic.foo", "bar", pErrStr, errStr.len);
 }
-
-// NOTE: in order to do this like Raylib, I need to control the externs
-// When I define the externs I need to swap out librdkafka types for the shimmed types I define.
-// See this file: https://github.com/Not-Nik/raylib-zig/blob/devel/lib/raylib-ext.zig
-// Importing automatigically with Zig only gets you so far.
-
-// pub const Conf = extern struct {
-//     pub fn destroy(self: *Conf) void {
-//         rd_kafka_conf_destroy(self);
-//     }
-
-//     pub fn dup(self: *const Conf) *Conf {
-//         return rd_kafka_conf_dup(self);
-//     }
-
-//     pub fn set(self: *Conf, name: []const u8, value: []const u8) void {
-//         var errStr: [512]u8 = undefined;
-//         const pErrStr: [*c]u8 = @ptrCast(&errStr);
-//         const result = rd_kafka_conf_set(self, @ptrCast(name), @ptrCast(value), pErrStr, errStr.len);
-
-//         std.log.info("result => {d}", .{result});
-//     }
-
-//     pub fn dump(self: *const Conf) void {
-//         var cnt: usize = undefined;
-//         const arr = rd_kafka_conf_dump(self, &cnt);
-//         defer c_rdk.rd_kafka_conf_dump_free(arr, cnt);
-
-//         std.log.info(">>>> dump <<<<", .{});
-//         var i: usize = 0;
-//         while (i < cnt) : (i += 2) {
-//             std.log.info("{s} = {s}", .{ arr[i], arr[i + 1] });
-//         }
-//     }
-// };
 
 // // librdkafka "conf" externs.
 // pub extern "c" fn rd_kafka_conf_new() *Conf;

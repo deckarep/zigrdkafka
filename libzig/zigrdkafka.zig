@@ -10,6 +10,9 @@ pub const LogLevel = cfg.LogLevel;
 const prd = @import("Producer.zig");
 pub const Producer = prd.Producer;
 
+const csmr = @import("Consumer.zig");
+pub const Consumer = csmr.Consumer;
+
 pub const RD_KAFKA_PARTITION_UA = c.RD_KAFKA_PARTITION_UA;
 
 // pub const rd_kafka_type_t = enum(c_int) {

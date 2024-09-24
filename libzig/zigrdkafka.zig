@@ -13,17 +13,14 @@ pub const Producer = prd.Producer;
 const csmr = @import("Consumer.zig");
 pub const Consumer = csmr.Consumer;
 
+const uuid = @import("Uuid.zig");
+pub const Uuid = uuid.Uuid;
+
 pub const RD_KAFKA_PARTITION_UA = c.RD_KAFKA_PARTITION_UA;
 
-// pub const rd_kafka_type_t = enum(c_int) {
-//     Producer,
-//     Consumer,
-// };
-
-// Opaque types.
-// pub const rd_kafka_t = extern struct {};
-// pub const rd_kafka_topic_t = extern struct {};
-// pub const rd_kafka_topic_conf_t = extern struct {};
+pub fn kafkaVersionStr() []const u8 {
+    return std.mem.span(c.rd_kafka_version_str());
+}
 
 // TODO: is this the best way to represent this struct?
 // https://devlog.hexops.com/2022/packed-structs-in-zig/

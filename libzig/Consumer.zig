@@ -40,6 +40,7 @@ pub const Consumer = struct {
 
     pub fn deinit(self: Consumer) void {
         if (self.cClient) |h| {
+            // Internally, rd_kafka_consumer_close will be called if this is called.
             c.rd_kafka_destroy(h);
         }
     }

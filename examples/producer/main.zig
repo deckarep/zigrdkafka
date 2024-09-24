@@ -17,6 +17,7 @@ const zrdk = @import("zigrdkafka");
 
 pub fn main() !void {
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    std.log.info("kafka version => {s}", .{zrdk.kafkaVersionStr()});
 
     const serversKey = "bootstrap.servers";
     const brokers = "localhost:9092";
@@ -56,6 +57,8 @@ pub fn main() !void {
         std.time.sleep(std.time.ns_per_ms * 1000);
         count += 1;
     }
+
+    try prodClient.flush(100);
 
     // const evFlags = zrdk.EventFlags{ .Dr = true, .Log = true };
     // conf.set_events(evFlags);

@@ -1,14 +1,17 @@
 ## zigrdkafka
 This is librdkafka under the command and control of Zig. This project
-requires Zig 0.13 and is developed on MacOS aarch64.
+requires Zig 0.13 and is developed currently on MacOS aarch64.
 
 ## Warning
-  * This lib is under heavy active development and subject to lots of changes.
-  * It is highly unstable at the moment. ⚠️⚠️ You have been warned ⚠️⚠️ !
-  * The api is far, far, far from complete!
-  * Is it clear you should not use it in production!?!?
-  * Should you even be using Zig in production!?!?
-  * If you are cool, the answer is yes!
+  * ⚠️⚠️ Unstable API ⚠️⚠️: This lib is under heavy active development and subject to heavy changes.
+  * The api is far, far, from complete!
+  * Use at your own risk, no warranty expressed or implied.
+  * Until the API becomes more stable, I will not be worrying about unit-tests.
+
+## Contributions
+  * This API is not intended to have 100% feature parity with the librdkafka C lib.
+    * One reason: Zig can provide a nicer experience over C so it should not be a 1 for 1 port.
+    * If I don't use a feature, it may not get built out in this API so submit a PR!
 
 ## Getting up and running
 

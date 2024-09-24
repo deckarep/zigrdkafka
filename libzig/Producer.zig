@@ -49,6 +49,14 @@ pub const Producer = struct {
         }
     }
 
+    pub fn flush(self: Producer, milliseconds: u64) !void {
+        if (self.cClient) |client| {
+            _ = c.rd_kafka_flush(client, @intCast(milliseconds));
+        }
+    }
+
+    // TODO: produceBatch
+
     pub fn produce(self: Producer, message: []const u8, options: ProduceOptions) !void {
         if (self.cClient) |client| {
             // TODO: creating topic config here but shouldn't be done here.

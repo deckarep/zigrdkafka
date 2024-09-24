@@ -5,6 +5,13 @@ const zrdk = @import("zigrdkafka");
 
 pub fn main() !void {
     std.log.info("all your bases..blah, blah...", .{});
+    std.log.info("kafka version => {s}", .{zrdk.kafkaVersionStr()});
+
+    for (0..10) |i| {
+        const a: i64 = @intCast(i);
+        const b: i64 = @intCast(i + 1);
+        testUUID(a, b);
+    }
 
     const brokers = "localhost:9092";
     const groupid = "zig-cli-consumer";
@@ -21,7 +28,23 @@ pub fn main() !void {
 
     consumer.subscribe(&topics);
 
-    while (true) {
+    var count: usize = 0;
+    while (count < 5) {
         try consumer.do();
+
+        count += 1;
     }
+}
+
+pub fn testUUID(first: i64, second: i64) void {
+    const u = zrdk.Uuid.new(first, second);
+    defer u.deinit();
+
+    const str = u.base64Str();
+    if (str) |s| {
+        std.log.info("Uuid b64 => {s}", .{s});
+    }
+
+    std.log.info("msb => {d}", .{u.mostSignificantBits()});
+    std.log.info("lsb => {d}", .{u.leastSignificantBits()});
 }

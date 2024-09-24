@@ -1,6 +1,7 @@
 ## zigrdkafka
-This is librdkafka under the command and control of Zig. This project
-requires Zig 0.13 and is developed currently on MacOS aarch64.
+All your codebase are belong to us.
+This is `librdkafka`, hijacked and under the command and control of Zig. 
+This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
 
 ## Currently Implemented
   - [x] Conf

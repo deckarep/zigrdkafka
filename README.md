@@ -3,11 +3,11 @@ This is librdkafka under the command and control of Zig. This project
 requires Zig 0.13 and is developed currently on MacOS aarch64.
 
 ## Currently Implemented
-  [x] Conf
-  [x] TopicConf
-  [x] Uuid
-  [x] Producer (in-progress)
-  [x] Consumer (in-progress)
+  - [x] Conf
+  - [x] TopicConf
+  - [x] Uuid
+  - [x] Producer (in-progress)
+  - [x] Consumer (in-progress)
 
 ## Warning
   * ⚠️⚠️ Unstable API ⚠️⚠️: This lib is under heavy active development and subject to heavy changes.

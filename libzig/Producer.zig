@@ -49,6 +49,10 @@ pub const Producer = struct {
         }
     }
 
+    pub fn Handle(self: Producer) zrdk.Handle {
+        return zrdk.Handle{ .cHandle = self.cClient };
+    }
+
     pub fn flush(self: Producer, milliseconds: u64) !void {
         if (self.cClient) |client| {
             _ = c.rd_kafka_flush(client, @intCast(milliseconds));

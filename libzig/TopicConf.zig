@@ -4,6 +4,7 @@ const c = @import("cdef.zig").cdef;
 // NOTE: this api largely seems to match the regular Conf api.
 // Most of below was copied from Conf.zig, perhaps I need to refactor
 // and mimic some type of "super" Conf that both can use.
+// NOTE: C++ librdkafka does this by having the create take a "global" or "topic" enum value.
 
 pub const TopicConfResultError = error{
     BufferTooSmall,

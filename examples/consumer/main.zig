@@ -53,6 +53,11 @@ pub fn testUUID(first: i64, second: i64) !void {
 }
 
 pub fn testTopicConf() !void {
+    const conf = try zrdk.Conf.new();
+
+    const consumer = try zrdk.Consumer.new(conf);
+    defer consumer.deinit();
+
     const tc = try zrdk.TopicConf.new();
     defer tc.deinit();
 
@@ -68,6 +73,10 @@ pub fn testTopicConf() !void {
     std.log.info("key acks => {s}", .{buf[0..bufSize]});
 
     tc.dump();
+
+    // Test topic itself. (not the config)
+    const topic = try zrdk.Topic.new(consumer.Handle(), "foo.bar", tc);
+    defer topic.deinit();
 }
 
 pub fn testHeaders() !void {

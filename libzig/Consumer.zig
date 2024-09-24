@@ -8,6 +8,7 @@ pub const ConsumerResultError = error{
 };
 
 pub const Consumer = struct {
+    // TODO: cClient should never be null (after successfull instantiation), make it non-nullable going forward.
     cClient: ?*c.rd_kafka_t = undefined,
     conf: Conf,
 
@@ -43,6 +44,11 @@ pub const Consumer = struct {
             // Internally, rd_kafka_consumer_close will be called if this is called.
             c.rd_kafka_destroy(h);
         }
+    }
+
+    pub fn Handle(self: Consumer) zrdk.Handle {
+        // TODO: cClient should never be null, make it non-nullable going forward.
+        return zrdk.Handle{ .cHandle = self.cClient.? };
     }
 
     pub fn close(self: Consumer) void {

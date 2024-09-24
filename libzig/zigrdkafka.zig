@@ -3,14 +3,16 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 
 const cfg = @import("Conf.zig");
+const topCfg = @import("TopicConf.zig");
+const hdrs = @import("Headers.zig");
 const prd = @import("Producer.zig");
 const csmr = @import("Consumer.zig");
 const uuid = @import("Uuid.zig");
-const topCfg = @import("TopicConf.zig");
 
 pub const ConfResult = cfg.ConfResult;
 pub const Conf = cfg.Conf;
 pub const TopicConf = topCfg.TopicConf;
+pub const Headers = hdrs.Headers;
 pub const LogLevel = cfg.LogLevel;
 pub const Producer = prd.Producer;
 pub const Consumer = csmr.Consumer;

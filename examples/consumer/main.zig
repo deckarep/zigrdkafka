@@ -8,6 +8,7 @@ pub fn main() !void {
     std.log.info("kafka version => {s}", .{zrdk.kafkaVersionStr()});
 
     try testTopicConf();
+    try testHeaders();
 
     for (0..10) |i| {
         const a: i64 = @intCast(i);
@@ -67,4 +68,15 @@ pub fn testTopicConf() !void {
     std.log.info("key acks => {s}", .{buf[0..bufSize]});
 
     tc.dump();
+}
+
+pub fn testHeaders() !void {
+    const hdrs = try zrdk.Headers.new();
+    defer hdrs.deinit();
+
+    try hdrs.add("Hello", "World!");
+    try hdrs.add("How", "Are You?");
+    try hdrs.add("What", "me worry?");
+
+    std.log.info("headers count => {d}", .{hdrs.count()});
 }

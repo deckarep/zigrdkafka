@@ -7,7 +7,7 @@ pub fn main() !void {
     std.log.info("all your bases..blah, blah...", .{});
     std.log.info("kafka version => {s}", .{zrdk.kafkaVersionStr()});
 
-    try testTopicConf();
+    // try testTopicConf();
     try testHeaders();
 
     for (0..10) |i| {
@@ -37,6 +37,8 @@ pub fn main() !void {
 
         count += 1;
     }
+
+    std.log.info("consumer loop ended.", .{});
 }
 
 pub fn testUUID(first: i64, second: i64) !void {
@@ -52,6 +54,7 @@ pub fn testUUID(first: i64, second: i64) !void {
     std.log.info("lsb => {d}", .{u.leastSignificantBits()});
 }
 
+// WARNING: Bug, this function is show malloc-double-free errors...not sure why yet.
 pub fn testTopicConf() !void {
     const conf = try zrdk.Conf.new();
 

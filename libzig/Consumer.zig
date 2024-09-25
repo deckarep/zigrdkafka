@@ -1,18 +1,18 @@
 const std = @import("std");
-const Conf = @import("Conf.zig").Conf;
-const zrdk = @import("zigrdkafka.zig");
 const c = @import("cdef.zig").cdef;
+const zrdk = @import("zigrdkafka.zig");
 
 pub const ConsumerResultError = error{
     Instantiation,
 };
 
 pub const Consumer = struct {
-    // TODO: cClient should never be null (after successfull instantiation), make it non-nullable going forward.
-    cClient: ?*c.rd_kafka_t = undefined,
-    conf: Conf,
+    cClient: *c.rd_kafka_t,
+    conf: zrdk.Conf,
 
-    pub fn new(conf: Conf) ConsumerResultError!Consumer {
+    const Self = @This();
+
+    pub fn new(conf: zrdk.Conf) ConsumerResultError!Self {
         var errStr: [512]u8 = undefined;
         const pErrStr: [*c]u8 = @ptrCast(&errStr);
 
@@ -33,32 +33,29 @@ pub const Consumer = struct {
         // Perhaps make this a default setting.
         _ = c.rd_kafka_poll_set_consumer(rk);
 
-        return Consumer{
-            .cClient = rk,
+        return Self{
+            .cClient = rk.?,
             .conf = conf,
         };
     }
 
-    pub fn deinit(self: Consumer) void {
-        if (self.cClient) |h| {
-            // Internally, rd_kafka_consumer_close will be called if this is called.
-            c.rd_kafka_destroy(h);
-        }
+    pub fn deinit(self: Self) void {
+        // Internally, rd_kafka_consumer_close will be called if this is called.
+        c.rd_kafka_destroy(self.cClient);
     }
 
-    pub fn Handle(self: Consumer) zrdk.Handle {
-        // TODO: cClient should never be null, make it non-nullable going forward.
-        return zrdk.Handle{ .cHandle = self.cClient.? };
+    pub fn Handle(self: Self) zrdk.Handle {
+        return zrdk.Handle{
+            .cHandle = self.cClient,
+        };
     }
 
-    pub fn close(self: Consumer) void {
-        if (self.cClient) |h| {
-            // TODO: handle return error.
-            _ = c.rd_kafka_consumer_close(h);
-        }
+    pub fn close(self: Self) void {
+        // TODO: handle return error.
+        _ = c.rd_kafka_consumer_close(self.cClient);
     }
 
-    pub fn subscribe(self: Consumer, topics: []const []const u8) void {
+    pub fn subscribe(self: Self, topics: []const []const u8) void {
         // Convert list of topics to a format suitable for librdkafka.
         const len: c_int = @intCast(topics.len);
         const topicSubscriptions = c.rd_kafka_topic_partition_list_new(len);
@@ -79,7 +76,7 @@ pub const Consumer = struct {
         std.log.info("Subscribed to {d} topic(s), waiting for rebalance and messages...", .{topicSubscriptions.*.cnt});
     }
 
-    pub fn do(self: Consumer) !void {
+    pub fn do(self: Self) !void {
         const msg = c.rd_kafka_consumer_poll(self.cClient, 100);
         if (msg == null) {
             std.log.warn("consumer timeout occurred, continuing...", .{});

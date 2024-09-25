@@ -13,7 +13,7 @@ pub const Topic = struct {
     const Self = @This();
 
     // TODO: new should take a generic Handle type me thinks.
-    pub fn new(client: zrdk.Handle, topicName: [:0]const u8, conf: zrdk.TopicConf) TopicResultError!Self {
+    pub fn init(client: zrdk.Handle, topicName: [:0]const u8, conf: zrdk.TopicConf) TopicResultError!Self {
         const handle = c.rd_kafka_topic_new(
             client.Handle(),
             topicName,

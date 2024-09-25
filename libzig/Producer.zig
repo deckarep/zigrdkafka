@@ -22,7 +22,7 @@ pub const Producer = struct {
 
     const Self = @This();
 
-    pub fn new(conf: Conf) ProducerResultError!Self {
+    pub fn init(conf: Conf) ProducerResultError!Self {
         var errStr: [512]u8 = undefined;
         const pErrStr: [*c]u8 = @ptrCast(&errStr);
 

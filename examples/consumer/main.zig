@@ -21,12 +21,12 @@ pub fn main() !void {
     const groupid = "zig-cli-consumer";
     const topics = [_][]const u8{"topic.foo"};
 
-    const conf = try zrdk.Conf.new();
+    const conf = try zrdk.Conf.init();
     try conf.set("bootstrap.servers", brokers);
     try conf.set("group.id", groupid);
     try conf.set("auto.offset.reset", "earliest");
 
-    const consumer = try zrdk.Consumer.new(conf);
+    const consumer = try zrdk.Consumer.init(conf);
     defer consumer.deinit();
     defer consumer.close();
 
@@ -85,7 +85,7 @@ pub fn testTopicPartitionList() !void {
 }
 
 pub fn testUUID(first: i64, second: i64) !void {
-    const u = try zrdk.Uuid.new(first, second);
+    const u = try zrdk.Uuid.init(first, second);
     defer u.deinit();
 
     const str = u.base64Str();
@@ -99,12 +99,12 @@ pub fn testUUID(first: i64, second: i64) !void {
 
 // WARNING: Bug, this function is show malloc-double-free errors...not sure why yet.
 pub fn testTopicConf() !void {
-    const conf = try zrdk.Conf.new();
+    const conf = try zrdk.Conf.init();
 
-    const consumer = try zrdk.Consumer.new(conf);
+    const consumer = try zrdk.Consumer.init(conf);
     defer consumer.deinit();
 
-    const tc = try zrdk.TopicConf.new();
+    const tc = try zrdk.TopicConf.init();
     defer tc.deinit();
 
     tc.dump();
@@ -121,7 +121,7 @@ pub fn testTopicConf() !void {
     tc.dump();
 
     // Test topic itself. (not the config)
-    const topic = try zrdk.Topic.new(consumer.Handle(), "foo.bar", tc);
+    const topic = try zrdk.Topic.init(consumer.Handle(), "foo.bar", tc);
     defer topic.deinit();
 }
 

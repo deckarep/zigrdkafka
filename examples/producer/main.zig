@@ -22,7 +22,7 @@ pub fn main() !void {
     const serversKey = "bootstrap.servers";
     const brokers = "localhost:9092";
 
-    const conf = try zrdk.Conf.new();
+    const conf = try zrdk.Conf.init();
     //defer conf.deinit(); //<-- don't call this, once given to client, as client owns it.
 
     // Here is how we can duplicate the Conf object.
@@ -41,7 +41,7 @@ pub fn main() !void {
 
     std.log.info("key: {s} => val: {s}", .{ serversKey, buf[0..bufSize] });
 
-    const prodClient = try zrdk.Producer.new(conf);
+    const prodClient = try zrdk.Producer.init(conf);
     defer prodClient.deinit();
 
     var count: usize = 0;

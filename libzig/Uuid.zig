@@ -11,7 +11,7 @@ pub const Uuid = struct {
 
     const Self = @This();
 
-    pub fn new(mostSigBits: i64, leastSigBits: i64) UuidResultError!Self {
+    pub fn init(mostSigBits: i64, leastSigBits: i64) UuidResultError!Self {
         const h = c.rd_kafka_Uuid_new(mostSigBits, leastSigBits);
         if (h == null) {
             return UuidResultError.Instantiation;

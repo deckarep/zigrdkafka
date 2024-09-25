@@ -18,7 +18,7 @@ pub const TopicConf = struct {
 
     const Self = @This();
 
-    pub fn new() TopicConfResultError!Self {
+    pub fn init() TopicConfResultError!Self {
         const handle = c.rd_kafka_topic_conf_new();
         if (handle) |h| {
             return Self{

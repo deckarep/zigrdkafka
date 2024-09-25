@@ -12,7 +12,7 @@ pub const Consumer = struct {
 
     const Self = @This();
 
-    pub fn new(conf: zrdk.Conf) ConsumerResultError!Self {
+    pub fn init(conf: zrdk.Conf) ConsumerResultError!Self {
         var errStr: [512]u8 = undefined;
         const pErrStr: [*c]u8 = @ptrCast(&errStr);
 

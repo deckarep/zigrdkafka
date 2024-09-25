@@ -25,7 +25,7 @@ pub const Conf = struct {
 
     const Self = @This();
 
-    pub fn new() ConfResultError!Self {
+    pub fn init() ConfResultError!Self {
         const handle = c.rd_kafka_conf_new();
         if (handle) |h| {
             return Self{

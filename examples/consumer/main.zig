@@ -43,7 +43,7 @@ pub fn main() !void {
 }
 
 pub fn testTopicPartitionList() !void {
-    const tpl = zrdk.TopicPartitions.init();
+    const tpl = zrdk.TopicPartitionList.init();
     defer tpl.deinit();
 
     std.debug.assert(tpl.count() == 0);

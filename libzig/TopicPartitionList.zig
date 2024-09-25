@@ -22,7 +22,7 @@ pub const TopicPartition = struct {
     // TODO: also getters for these => metadata, metadata_size, opaque, err
 };
 
-pub const TopicPartitions = struct {
+pub const TopicPartitionList = struct {
     cHandle: *c.rd_kafka_topic_partition_list_t,
 
     const Self = @This();

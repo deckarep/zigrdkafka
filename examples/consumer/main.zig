@@ -76,8 +76,12 @@ pub fn testTopicPartitionList() !void {
     // del
     std.debug.assert(tpl.del("Foo", 0));
 
+    std.debug.assert(tpl.count() == 7);
+
     // delAt
     std.debug.assert(tpl.delAt(0));
+
+    std.debug.assert(tpl.count() == 6);
 }
 
 pub fn testUUID(first: i64, second: i64) !void {

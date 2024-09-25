@@ -20,7 +20,9 @@ pub const Producer = struct {
     cClient: ?*c.rd_kafka_t = undefined,
     conf: Conf,
 
-    pub fn new(conf: Conf) ProducerResultError!Producer {
+    const Self = @This();
+
+    pub fn new(conf: Conf) ProducerResultError!Self {
         var errStr: [512]u8 = undefined;
         const pErrStr: [*c]u8 = @ptrCast(&errStr);
 
@@ -37,23 +39,23 @@ pub const Producer = struct {
             return ProducerResultError.Instantiation;
         }
 
-        return Producer{
+        return Self{
             .cClient = rk,
             .conf = conf,
         };
     }
 
-    pub fn deinit(self: Producer) void {
+    pub fn deinit(self: Self) void {
         if (self.cClient) |h| {
             c.rd_kafka_destroy(h);
         }
     }
 
-    pub fn Handle(self: Producer) zrdk.Handle {
+    pub fn Handle(self: Self) zrdk.Handle {
         return zrdk.Handle{ .cHandle = self.cClient };
     }
 
-    pub fn flush(self: Producer, milliseconds: u64) !void {
+    pub fn flush(self: Self, milliseconds: u64) !void {
         if (self.cClient) |client| {
             _ = c.rd_kafka_flush(client, @intCast(milliseconds));
         }
@@ -61,7 +63,7 @@ pub const Producer = struct {
 
     // TODO: produceBatch
 
-    pub fn produce(self: Producer, message: []const u8, options: ProduceOptions) !void {
+    pub fn produce(self: Self, message: []const u8, options: ProduceOptions) !void {
         if (self.cClient) |client| {
             // TODO: creating topic config here but shouldn't be done here.
             // Should be passed in.

@@ -122,7 +122,7 @@ pub fn testTopicConf() !void {
 }
 
 pub fn testHeaders() !void {
-    const hdrs = try zrdk.Headers.new();
+    const hdrs = try zrdk.Headers.init();
     defer hdrs.deinit();
 
     try hdrs.add("Hello", "World!");

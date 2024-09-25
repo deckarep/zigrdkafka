@@ -11,11 +11,11 @@ pub const Headers = struct {
 
     const Self = @This();
 
-    pub fn new() HeadersRespError!Headers {
-        return newWithCapacity(0);
+    pub fn init() HeadersRespError!Headers {
+        return initWithCapacity(0);
     }
 
-    pub fn newWithCapacity(initialCount: usize) HeadersRespError!Headers {
+    pub fn initWithCapacity(initialCount: usize) HeadersRespError!Headers {
         const hdrs = c.rd_kafka_headers_new(initialCount);
         if (hdrs) |h| {
             return Self{ .cHandle = h };

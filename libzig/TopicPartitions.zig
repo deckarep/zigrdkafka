@@ -113,6 +113,10 @@ pub const TopicPartitions = struct {
             _ = std.c.printf("topic => %s\n", res.*.topic);
             std.debug.print("partition => {d}\n", .{res.*.partition});
             std.debug.print("offset => {d}\n", .{res.*.offset});
+            // metadata (void*)
+            // metadata_size (usize)
+            // opaque (void*)
+            // err
         } else {
             std.debug.print("find found no topic: {s}, partition: {d}\n", .{ topic, partition });
         }

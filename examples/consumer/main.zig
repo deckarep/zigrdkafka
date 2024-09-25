@@ -50,6 +50,14 @@ pub fn testTopicPartitionList() !void {
 
     // some adds
     tpl.add("Foo", 0);
+
+    // elemAt
+    if (tpl.elemAt(0)) |el| {
+        std.debug.assert(el.partition() == 0);
+        std.debug.assert(el.offset() == -1001); // Not sure why the default offset is this val.
+        std.debug.assert(std.mem.eql(u8, el.topic(), "Foo"));
+    }
+
     tpl.add("Bar", 1);
     tpl.add("Baz", 2);
 

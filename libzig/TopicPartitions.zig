@@ -1,6 +1,27 @@
 const std = @import("std");
 const c = @import("cdef.zig").cdef;
 
+pub const TopicPartition = struct {
+    // NOTE: I had to mark this as an *allowzero pointer, not sure why.
+    cHandle: *allowzero c.rd_kafka_topic_partition_t,
+
+    const Self = @This();
+
+    pub fn topic(self: Self) [:0]const u8 {
+        return std.mem.span(self.cHandle.topic);
+    }
+
+    pub fn partition(self: Self) i32 {
+        return self.cHandle.partition;
+    }
+
+    pub fn offset(self: Self) i64 {
+        return self.cHandle.offset;
+    }
+
+    // TODO: also getters for these => metadata, metadata_size, opaque, err
+};
+
 pub const TopicPartitions = struct {
     cHandle: *c.rd_kafka_topic_partition_list_t,
 
@@ -26,8 +47,11 @@ pub const TopicPartitions = struct {
         c.rd_kafka_topic_partition_list_destroy(self.cHandle);
     }
 
-    pub fn elems(_: Self) void {
-        // TODO: how to handle elems field on the actual *c handle?
+    pub fn elemAt(self: Self, index: usize) ?TopicPartition {
+        if (index <= self.cHandle.cnt - 1) {
+            return TopicPartition{ .cHandle = &self.cHandle.elems[index] };
+        }
+        return null;
     }
 
     pub fn count(self: Self) usize {

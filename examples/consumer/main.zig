@@ -8,6 +8,7 @@ pub fn main() !void {
     std.log.info("kafka version => {s}", .{zrdk.kafkaVersionStr()});
 
     // try testTopicConf();
+    try testTopicPartitionList();
     try testHeaders();
 
     for (0..10) |i| {
@@ -39,6 +40,44 @@ pub fn main() !void {
     }
 
     std.log.info("consumer loop ended.", .{});
+}
+
+pub fn testTopicPartitionList() !void {
+    const tpl = zrdk.TopicPartitions.init();
+    defer tpl.deinit();
+
+    std.debug.assert(tpl.count() == 0);
+
+    // some adds
+    tpl.add("Foo", 0);
+    tpl.add("Bar", 1);
+    tpl.add("Baz", 2);
+
+    std.debug.assert(tpl.count() == 3);
+
+    // addRange
+    tpl.addRange("Biz", 3, 7);
+
+    std.debug.assert(tpl.count() == 8);
+
+    // find
+    tpl.find("Bar", 1);
+
+    // setOffset
+    tpl.setOffset("Bar", 1, 0);
+
+    // find again.
+    tpl.find("Bar", 1);
+
+    // copy
+    const tplCopy = tpl.copy();
+    defer tplCopy.deinit();
+
+    // del
+    std.debug.assert(tpl.del("Foo", 0));
+
+    // delAt
+    std.debug.assert(tpl.delAt(0));
 }
 
 pub fn testUUID(first: i64, second: i64) !void {

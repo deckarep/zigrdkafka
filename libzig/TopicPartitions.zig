@@ -2,7 +2,7 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 
 pub const TopicPartitions = struct {
-    cHandle: *const c.rd_kafka_topic_partition_list_t,
+    cHandle: *c.rd_kafka_topic_partition_list_t,
 
     const Self = @This();
 
@@ -24,6 +24,18 @@ pub const TopicPartitions = struct {
 
     fn destroy(self: Self) void {
         c.rd_kafka_topic_partition_list_destroy(self.cHandle);
+    }
+
+    pub fn elems(_: Self) void {
+        // TODO: how to handle elems field on the actual *c handle?
+    }
+
+    pub fn count(self: Self) usize {
+        return @intCast(self.cHandle.cnt);
+    }
+
+    pub fn cap(self: Self) usize {
+        return @intCast(self.cHandle.size);
     }
 
     /// add will add a topic+partition to list.
@@ -69,7 +81,7 @@ pub const TopicPartitions = struct {
     /// Make a copy of an existing list.
     /// Returns: a new list fully populated to be identical to source.
     pub fn copy(self: Self) Self {
-        const res = c.rd_kafka_topic_parition_list_copy(self.cHandle);
+        const res = c.rd_kafka_topic_partition_list_copy(self.cHandle);
         return Self{
             .cHandle = res,
         };
@@ -90,11 +102,20 @@ pub const TopicPartitions = struct {
     /// Find element by topic and partition.
     /// Returns: a pointer to the first matching element, or null if not found.
     pub fn find(self: Self, topic: [:0]const u8, partition: i32) void {
-        _ = c.rd_kafka_topic_partition_list_find(
+        const res = c.rd_kafka_topic_partition_list_find(
             self.cHandle,
             @ptrCast(topic),
             partition,
         );
+
+        // TODO: return something useful, currently this just prints as a side-effect.
+        if (res != null) {
+            _ = std.c.printf("topic => %s\n", res.*.topic);
+            std.debug.print("partition => {d}\n", .{res.*.partition});
+            std.debug.print("offset => {d}\n", .{res.*.offset});
+        } else {
+            std.debug.print("find found no topic: {s}, partition: {d}\n", .{ topic, partition });
+        }
     }
 
     // NOTE: this requires a a comparator function arg.

@@ -19,5 +19,8 @@ pub const TopicPartition = struct {
         return self.cHandle.offset;
     }
 
-    // TODO: also getters for these => metadata, metadata_size, opaque, err
+    // TODO: also getters for these fields also on this struct.
+    // metadata, metadata_size
+    // opaque
+    // err
 };

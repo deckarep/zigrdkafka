@@ -69,13 +69,21 @@ pub fn testTopicPartitionList() !void {
     std.debug.assert(tpl.count() == 8);
 
     // find
-    tpl.find("Bar", 1);
+    if (tpl.find("Bar", 1)) |tp| {
+        std.debug.assert(std.mem.eql(u8, tp.topic(), "Bar"));
+        std.debug.assert(tp.partition() == 1);
+        std.debug.assert(tp.offset() == -1001);
+    }
 
     // setOffset
     tpl.setOffset("Bar", 1, 0);
 
     // find again.
-    tpl.find("Bar", 1);
+    if (tpl.find("Bar", 1)) |tp| {
+        std.debug.assert(std.mem.eql(u8, tp.topic(), "Bar"));
+        std.debug.assert(tp.partition() == 1);
+        std.debug.assert(tp.offset() == 0);
+    }
 
     // copy
     const tplCopy = tpl.copy();

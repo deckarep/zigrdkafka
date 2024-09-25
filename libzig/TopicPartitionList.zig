@@ -105,25 +105,18 @@ pub const TopicPartitionList = struct {
 
     /// Find element by topic and partition.
     /// Returns: a pointer to the first matching element, or null if not found.
-    pub fn find(self: Self, topic: [:0]const u8, partition: i32) void {
+    pub fn find(self: Self, topic: [:0]const u8, partition: i32) ?zrdk.TopicPartition {
         const res = c.rd_kafka_topic_partition_list_find(
             self.cHandle,
             @ptrCast(topic),
             partition,
         );
 
-        // TODO: return something useful, currently this just prints as a side-effect.
         if (res != null) {
-            _ = std.c.printf("topic => %s\n", res.*.topic);
-            std.debug.print("partition => {d}\n", .{res.*.partition});
-            std.debug.print("offset => {d}\n", .{res.*.offset});
-            // metadata (void*)
-            // metadata_size (usize)
-            // opaque (void*)
-            // err
-        } else {
-            std.debug.print("find found no topic: {s}, partition: {d}\n", .{ topic, partition });
+            return zrdk.TopicPartition{ .cHandle = res };
         }
+
+        return null;
     }
 
     // NOTE: this requires a a comparator function arg.

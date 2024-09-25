@@ -7,7 +7,7 @@ pub const HeadersRespError = error{
 };
 
 pub const Headers = struct {
-    cHandle: *c.rd_kafka_headers_t = undefined,
+    cHandle: *c.rd_kafka_headers_t,
 
     const Self = @This();
 

@@ -17,7 +17,7 @@ pub const ProduceOptions = struct {
 };
 
 pub const Producer = struct {
-    cClient: ?*c.rd_kafka_t = undefined,
+    cClient: *c.rd_kafka_t,
     conf: Conf,
 
     const Self = @This();
@@ -40,15 +40,13 @@ pub const Producer = struct {
         }
 
         return Self{
-            .cClient = rk,
+            .cClient = rk.?,
             .conf = conf,
         };
     }
 
     pub fn deinit(self: Self) void {
-        if (self.cClient) |h| {
-            c.rd_kafka_destroy(h);
-        }
+        c.rd_kafka_destroy(self.cClient);
     }
 
     pub fn Handle(self: Self) zrdk.Handle {
@@ -56,57 +54,54 @@ pub const Producer = struct {
     }
 
     pub fn flush(self: Self, milliseconds: u64) !void {
-        if (self.cClient) |client| {
-            _ = c.rd_kafka_flush(client, @intCast(milliseconds));
-        }
+        _ = c.rd_kafka_flush(self.cClient, @intCast(milliseconds));
     }
 
     // TODO: produceBatch
 
     pub fn produce(self: Self, message: []const u8, options: ProduceOptions) !void {
-        if (self.cClient) |client| {
-            // TODO: creating topic config here but shouldn't be done here.
-            // Should be passed in.
-            const tc = c.rd_kafka_topic_conf_new();
-            const topic = c.rd_kafka_topic_new(
-                client,
-                "topic.foo",
-                tc,
-            );
 
-            var key: ?*const anyopaque = null;
-            var keyLen: usize = 0;
+        // TODO: creating topic config here but shouldn't be done here.
+        // Should be passed in.
+        const tc = c.rd_kafka_topic_conf_new();
+        const topic = c.rd_kafka_topic_new(
+            self.cClient,
+            "topic.foo",
+            tc,
+        );
 
-            if (options.key) |k| {
-                key = @ptrCast(options.key);
-                keyLen = k.len;
-            }
+        var key: ?*const anyopaque = null;
+        var keyLen: usize = 0;
 
-            const res = c.rd_kafka_produce(
-                // Producer handle
-                topic,
-                // Topic name
-                options.partition,
-                // Make a copy of the payload.
-                options.flags,
-                // Message value and length (Zig NOTE: the C api uses void*, so we have to remove constness.)
-                @constCast(@ptrCast(message)),
-                // Per-Message opaque, provided in
-                // delivery report callback as
-                // msg_opaque.
-                message.len,
-                // Key is an optional message key.
-                key,
-                // keylen is the optional message key len.
-                keyLen,
-                // Optional opaque pointer, that is provided in delivery report callback.
-                // TODO: allow for sending this in as well.
-                null,
-            );
+        if (options.key) |k| {
+            key = @ptrCast(options.key);
+            keyLen = k.len;
+        }
 
-            if (res != c.RD_KAFKA_RESP_ERR_NO_ERROR) {
-                std.log.info("result of produce was => {d}", .{res});
-            }
+        const res = c.rd_kafka_produce(
+            // Producer handle
+            topic,
+            // Topic name
+            options.partition,
+            // Make a copy of the payload.
+            options.flags,
+            // Message value and length (Zig NOTE: the C api uses void*, so we have to remove constness.)
+            @constCast(@ptrCast(message)),
+            // Per-Message opaque, provided in
+            // delivery report callback as
+            // msg_opaque.
+            message.len,
+            // Key is an optional message key.
+            key,
+            // keylen is the optional message key len.
+            keyLen,
+            // Optional opaque pointer, that is provided in delivery report callback.
+            // TODO: allow for sending this in as well.
+            null,
+        );
+
+        if (res != c.RD_KAFKA_RESP_ERR_NO_ERROR) {
+            std.log.info("result of produce was => {d}", .{res});
         }
     }
 };

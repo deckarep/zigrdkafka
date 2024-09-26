@@ -23,9 +23,9 @@ pub fn main() !void {
   defer consumer.deinit();
   defer consumer.close();
 
-  // Here's some topics of interest.
-  const topics = [_][]const u8{"topic.foo"};
-  consumer.subscribe(&topics);
+  // Define topics of interest to consume.
+  const topics = [_][]const u8{"topic.foo", "topic.bar"};
+  try consumer.subscribe(&topics);
 
   while (true) {
       // Note: how work is done is not yet well-defined.

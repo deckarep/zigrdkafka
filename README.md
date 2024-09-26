@@ -1,5 +1,8 @@
 ## zigrdkafka
 *All your codebase are belong to us.*
+
+#
+
 This is `librdkafka`, hijacked and under the command and control of Zig. 
 This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
 
@@ -65,6 +68,7 @@ zig build
 * Consider auto-generation down the road, at least for some things.
 * Design choice: As it stands, all Zig structs are value-type and immutable, this may change for all or some structs.
   * The idea is that it makes the API even more user-friendly and all mutable state occurs in the librdkafka layer anyway.
+  * Additionally, Zig/llvm often account for this and can often pass const value-types by reference anyway as an optimization.
 * All C ugliness should be hidden away
   * Zig namespacing more lightweight and less redundant. Example: `c.rd_kafka_conf_set` => `z.Conf.set` (something like this)
   * Only Zig style strings: `[]const u8` or null-terminated when required: `[:0]const u8`

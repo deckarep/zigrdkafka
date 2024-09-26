@@ -14,7 +14,7 @@ pub const TopicConfResultError = error{
 };
 
 pub const TopicConf = struct {
-    cHandle: *c.rd_kafka_topic_conf_t = undefined,
+    cHandle: *c.rd_kafka_topic_conf_t,
 
     const Self = @This();
 

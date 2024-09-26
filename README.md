@@ -8,13 +8,16 @@ This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
   - [x] TopicConf ✅
   - [x] Uuid ✅
   - [x] Topic (in-progress)
-  - [x] TopicPartitions (in-progress)
+  - [x] TopicPartition ✅
+  - [x] TopicPartitionList (in-progress)
   - [x] Headers collection (in-progress)
   - [x] Consumer (in-progress)
 
 ## Warning
+  * While both the Consumer and Producer work, some things are still hard-coded as this lib is
+    currently in discovery phase.
   * ⚠️⚠️ Unstable API ⚠️⚠️: This lib is under heavy active development and subject to heavy changes.
-  * The api is far, far, from complete!
+  * The api is far, from complete!
   * Use at your own risk, no warranty expressed or implied.
   * Until the API becomes more stable, I will not be worrying about unit-tests.
 
@@ -55,16 +58,19 @@ zig build
   ./consumer
 ```
 
-## Dev notes
+## Design Goals/Considerations
 
-1. Ideally I will build a 1st class Zig-flavored wrapper
-2. Big question: attempt auto-generation???
-3. All C ugliness would be hidden away
-  * Zig namespacing more lightweight. Example: `c.rd_kafka_conf_set` => `z.Conf.set` (something like this)
+* Provide a 1st class Zig-flavored wrapper around librdkafka
+* Consider auto-generation down the road, at least for some things.
+* Design choice: As it stands, all Zig structs are value-type and immutable, this may change for all or some structs.
+  * The idea is that it makes the API even more user-friendly and all mutable state occurs in the librdkafka layer anyway.
+* All C ugliness should be hidden away
+  * Zig namespacing more lightweight and less redundant. Example: `c.rd_kafka_conf_set` => `z.Conf.set` (something like this)
   * Only Zig style strings: `[]const u8` or null-terminated when required: `[:0]const u8`
-  * Zig-based structs would may have "methods" where it makes sense
-  * No `[*c]` tags anywhere (in-progress)
-  * C-based #defines, enums converted to Zig enums
-  * C-based `_destroy()` => `.deinit()`
+  * Utilize Zig-based struct methods where it makes sense.
+  * No `[*c]` tags anywhere (in-progress), internal is ok.
+  * C-based #defines, enums converted to Zig enums (not started)
+  * C-based `new` or `create` => `init` for Zig.
+  * C-based `_destroy()` => `.deinit()` for Zig.
   * Use of Zig-flavored callbacks so user doesn't need to declare fn with `callconv(.C)`.
   * librdkafka doesn't expose allocators the way Zig prefers, not sure if there is a way around this.

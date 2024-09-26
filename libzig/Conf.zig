@@ -21,7 +21,7 @@ pub const ConfResultError = error{
 };
 
 pub const Conf = struct {
-    cHandle: *c.rd_kafka_conf_t = undefined,
+    cHandle: *c.rd_kafka_conf_t,
 
     const Self = @This();
 

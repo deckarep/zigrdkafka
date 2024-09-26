@@ -8,7 +8,7 @@ pub const TopicResultError = error{
 };
 
 pub const Topic = struct {
-    cHandle: *c.rd_kafka_topic_t = undefined,
+    cHandle: *c.rd_kafka_topic_t,
 
     const Self = @This();
 

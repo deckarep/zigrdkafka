@@ -6,6 +6,38 @@
 This is `librdkafka`, hijacked and under the command and control of Zig. 
 This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
 
+## Sample Consumer
+```zig
+const std = @import("std");
+const zrdk = @import("zigrdkafka");
+
+pub fn main() !void {
+  // Create a fresh consumer configuration.
+  const conf = try zrdk.Conf.init();
+  
+  try conf.set("bootstrap.servers", "localhost:9092");
+  try conf.set("group.id", "zig-cli-consumer");
+
+  // Create a new consumer.
+  const consumer = try zrdk.Consumer.init(conf);
+  defer consumer.deinit();
+  defer consumer.close();
+
+  // Here's some topics of interest.
+  const topics = [_][]const u8{"topic.foo"};
+  consumer.subscribe(&topics);
+
+  while (true) {
+      // Note: how work is done is not yet well-defined.
+      // To be continued.
+      try consumer.doWork();
+  }
+
+  std.log.info("Consumer loop ended!", .{});
+  std.log.info("Yep, it's going to be this easy!", .{});
+}
+```
+
 ## Currently Implemented
   - [x] Conf ✅
   - [x] TopicConf ✅

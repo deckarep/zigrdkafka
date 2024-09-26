@@ -11,7 +11,8 @@ This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
   - [x] TopicPartition ✅
   - [x] TopicPartitionList (in-progress)
   - [x] Headers collection (in-progress)
-  - [x] Consumer (in-progress)
+  - [x] Consumer (in-progress, but works!)
+  - [x] Producer (in-progress, but works!)
 
 ## Warning
   * While both the Consumer and Producer work, some things are still hard-coded as this lib is

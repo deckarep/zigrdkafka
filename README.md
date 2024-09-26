@@ -46,6 +46,7 @@ pub fn main() !void {
   - [x] TopicPartition ✅
   - [x] TopicPartitionList (in-progress)
   - [x] Headers collection (in-progress)
+  - [x] Message (in-progress)
   - [x] Consumer (in-progress, but works!)
   - [x] Producer (in-progress, but works!)
 

@@ -66,15 +66,15 @@ pub fn main() !void {
             continue;
         }
 
-        // Check the error, a message could have an associated err.
+        // The message could also have an associated error.
         if (msg.err() != 0) {
             std.log.warn("error occurred, do something with it...", .{});
             continue;
         }
 
         // Proper message below.
-        std.log.info("Message on <topic-name>, partition: {d}, offset: {d}", .{
-            // Get <topic-name> from *rkt inside raw c Message.
+        std.log.info("message on <topic-name>, partition: {d}, offset: {d}", .{
+            // TODO: Get <topic-name> from *rkt inside raw c Message.
             msg.partition(),
             msg.offset(),
         });
@@ -83,9 +83,7 @@ pub fn main() !void {
 
         // Print the message value/payload
         // TODO: this is more of a dump, it should return the string.
-        msg.payloadStr();
-
-        std.log.info("just consuming along...", .{});
+        msg.dumpPayloadStr();
 
         count += 1;
     }

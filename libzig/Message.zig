@@ -29,7 +29,7 @@ pub const Message = struct {
 
     const Self = @This();
 
-    pub fn wrap(rawPtr: ?*c.struct_rd_kafka_message_s) Self {
+    pub inline fn wrap(rawPtr: ?*c.struct_rd_kafka_message_s) Self {
         return Self{ .cHandle = rawPtr };
     }
 
@@ -39,44 +39,44 @@ pub const Message = struct {
         }
     }
 
-    pub fn isEmpty(self: Self) bool {
+    pub inline fn isEmpty(self: Self) bool {
         return self.cHandle == null;
     }
 
     // TODO: a message also hold a raw pointer to *rkt which needs to get extracted too.
 
     // TODO: don't return raw c_int, it should be a Zig error type.
-    pub fn err(self: Self) c_int {
+    pub inline fn err(self: Self) c_int {
         // Note: When checking err() you must have already ruled out
         // the message is not empty.
         return self.cHandle.?.err;
     }
 
-    pub fn partition(self: Self) i32 {
+    pub inline fn partition(self: Self) i32 {
         // Note: When checking partition() you must have already ruled out
         // the message is not empty.
         return self.cHandle.?.partition;
     }
 
-    pub fn offset(self: Self) i64 {
+    pub inline fn offset(self: Self) i64 {
         // Note: When checking offset() you must have already ruled out
         // the message is not empty.
         return self.cHandle.?.offset;
     }
 
-    pub fn payloadLen(self: Self) usize {
+    pub inline fn len(self: Self) usize {
         // Note: When checking offset() you must have already ruled out
         // the message is not empty.
         return self.cHandle.?.len;
     }
 
-    pub fn payloadStr(self: Self) void {
+    pub fn dumpPayloadStr(self: Self) void {
         if (self.cHandle.?.payload) |p| {
-            const len = self.payloadLen();
+            const pLen = self.len();
             const bytePtr: [*c]u8 = @ptrCast(p);
-            const txt = bytePtr[0..len];
+            const txt = bytePtr[0..pLen];
 
-            std.log.info("Message is: \"{s}\", payload is {d} bytes long", .{ txt, len });
+            std.log.info("Message is: \"{s}\", payload is {d} bytes long", .{ txt, pLen });
         }
     }
 };

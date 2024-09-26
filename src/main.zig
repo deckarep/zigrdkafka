@@ -1,3 +1,5 @@
+// IGNORE THIS FILE, IT WILL BE DELETED!
+
 // Open Source Initiative OSI - The MIT License (MIT):Licensing
 
 // The MIT License (MIT)

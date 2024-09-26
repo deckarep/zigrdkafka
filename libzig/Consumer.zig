@@ -99,31 +99,38 @@ pub const Consumer = struct {
         std.log.info("Subscribed to {d} topic(s), waiting for rebalance and messages...", .{topicSubscriptions.*.cnt});
     }
 
+    pub fn commitMessage(self: Self, msg: zrdk.Message) void {
+        _ = self;
+        _ = msg;
+    }
+
     pub fn do(self: Self) !void {
         const msg = c.rd_kafka_consumer_poll(self.cClient, 100);
-        if (msg == null) {
+        const wMsg = zrdk.Message.wrap(msg);
+        defer wMsg.deinit();
+
+        if (wMsg.isEmpty()) {
             std.log.warn("consumer timeout occurred, continuing...", .{});
             return; // Timeout: no message within 100ms.
         }
 
-        defer c.rd_kafka_message_destroy(msg);
-
-        if (msg.*.err != 0) {
+        if (wMsg.err() != 0) {
             std.log.warn("error occurred, continuing...", .{});
             return; // TODO: log out error.
         }
 
         // Proper message below.
-        std.log.info("Message on <topic-name>, partition: {d}, offset: {d}", .{ msg.*.partition, msg.*.offset });
+        std.log.info("Message on <topic-name>, partition: {d}, offset: {d}", .{
+            // Get <topic-name> from *rkt inside raw c Message.
+            wMsg.partition(),
+            wMsg.offset(),
+        });
 
-        // TODO: Print the key if one.
+        // TODO: If message has a "key" print it.
 
         // Print the message value/payload
-        if (msg.*.payload) |p| {
-            const bytePtr: [*c]u8 = @ptrCast(p);
-            const txt = bytePtr[0..msg.*.len];
-            std.log.info("Message is: \"{s}\", payload is {d} bytes long", .{ txt, msg.*.len });
-        }
+        // TODO: this is more of a dump, it should return the string.
+        wMsg.payloadStr();
 
         std.log.info("just consuming along...", .{});
     }

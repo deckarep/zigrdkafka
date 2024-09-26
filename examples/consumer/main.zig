@@ -57,7 +57,35 @@ pub fn main() !void {
 
     var count: usize = 0;
     while (count < 5) {
-        try consumer.do();
+        const msg = consumer.poll(100);
+        msg.deinit();
+
+        // Message could be empty because the consumer timed out.
+        if (msg.isEmpty()) {
+            std.log.warn("consumer timeout occurred so nothing to do, continuing...", .{});
+            continue;
+        }
+
+        // Check the error, a message could have an associated err.
+        if (msg.err() != 0) {
+            std.log.warn("error occurred, do something with it...", .{});
+            continue;
+        }
+
+        // Proper message below.
+        std.log.info("Message on <topic-name>, partition: {d}, offset: {d}", .{
+            // Get <topic-name> from *rkt inside raw c Message.
+            msg.partition(),
+            msg.offset(),
+        });
+
+        // TODO: If message has a "key" print it.
+
+        // Print the message value/payload
+        // TODO: this is more of a dump, it should return the string.
+        msg.payloadStr();
+
+        std.log.info("just consuming along...", .{});
 
         count += 1;
     }

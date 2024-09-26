@@ -104,34 +104,14 @@ pub const Consumer = struct {
         _ = msg;
     }
 
-    pub fn do(self: Self) !void {
-        const msg = c.rd_kafka_consumer_poll(self.cClient, 100);
-        const wMsg = zrdk.Message.wrap(msg);
-        defer wMsg.deinit();
-
-        if (wMsg.isEmpty()) {
-            std.log.warn("consumer timeout occurred, continuing...", .{});
-            return; // Timeout: no message within 100ms.
-        }
-
-        if (wMsg.err() != 0) {
-            std.log.warn("error occurred, continuing...", .{});
-            return; // TODO: log out error.
-        }
-
-        // Proper message below.
-        std.log.info("Message on <topic-name>, partition: {d}, offset: {d}", .{
-            // Get <topic-name> from *rkt inside raw c Message.
-            wMsg.partition(),
-            wMsg.offset(),
-        });
-
-        // TODO: If message has a "key" print it.
-
-        // Print the message value/payload
-        // TODO: this is more of a dump, it should return the string.
-        wMsg.payloadStr();
-
-        std.log.info("just consuming along...", .{});
+    /// poll returns a wrapped message which the caller owns.
+    /// Always .deinit() the message no matter what.
+    /// Always ensure message !isEmpty() before inspecting it.
+    pub fn poll(self: Self, milliseconds: u64) zrdk.Message {
+        const rawMsg = c.rd_kafka_consumer_poll(
+            self.cClient,
+            @intCast(milliseconds),
+        );
+        return zrdk.Message.wrap(rawMsg);
     }
 };

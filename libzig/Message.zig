@@ -64,19 +64,37 @@ pub const Message = struct {
         return self.cHandle.?.offset;
     }
 
+    /// Depends on the value of err.
+    /// err == 0: Message payload length
+    /// err != 0: Error string length
     pub inline fn len(self: Self) usize {
         // Note: When checking offset() you must have already ruled out
         // the message is not empty.
         return self.cHandle.?.len;
     }
 
-    pub fn dumpPayloadStr(self: Self) void {
+    /// Producer: original message payload.
+    /// Consumer: Depends on the value of err:
+    ///     err == 0: Message payload.
+    ///     err != 0: Error string.
+    pub fn payload(self: Self) ?*anyopaque {
+        return self.cHandle.?.payload;
+    }
+
+    /// payloadAsString just interprets the payload as a string which will work for
+    /// either a valid message or an error.
+    ///
+    /// Producer: original message payload.
+    /// Consumer: Depends on the value of err:
+    ///     err == 0: Message payload.
+    ///     err != 0: Error string.
+    pub fn payloadAsString(self: Self) ?[]const u8 {
         if (self.cHandle.?.payload) |p| {
             const pLen = self.len();
-            const bytePtr: [*c]u8 = @ptrCast(p);
-            const txt = bytePtr[0..pLen];
-
-            std.log.info("Message is: \"{s}\", payload is {d} bytes long", .{ txt, pLen });
+            const bytePtr: [*c]const u8 = @ptrCast(p);
+            const result = bytePtr[0..pLen];
+            return result;
         }
+        return null;
     }
 };

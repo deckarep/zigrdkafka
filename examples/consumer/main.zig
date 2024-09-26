@@ -82,8 +82,9 @@ pub fn main() !void {
         // TODO: If message has a "key" print it.
 
         // Print the message value/payload
-        // TODO: this is more of a dump, it should return the string.
-        msg.dumpPayloadStr();
+        if (msg.payloadAsString()) |str| {
+            std.log.info("Payload as a string {s}", .{str});
+        }
 
         count += 1;
     }

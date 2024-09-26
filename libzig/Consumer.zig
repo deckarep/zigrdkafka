@@ -99,6 +99,7 @@ pub const Consumer = struct {
         std.log.info("Subscribed to {d} topic(s), waiting for rebalance and messages...", .{topicSubscriptions.*.cnt});
     }
 
+    // TODO: commitMessage is important yall.
     pub fn commitMessage(self: Self, msg: zrdk.Message) void {
         _ = self;
         _ = msg;

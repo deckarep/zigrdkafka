@@ -34,7 +34,7 @@ pub fn main() !void {
   }
 
   std.log.info("Consumer loop ended!", .{});
-  std.log.info("Yep, it's going to be this easy!", .{});
+  std.log.info("Yep, it's really that easy!", .{});
 }
 ```
 

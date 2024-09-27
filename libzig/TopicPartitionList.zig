@@ -25,7 +25,7 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 const zrdk = @import("zigrdkafka.zig");
 
-const defaultCapacity = 3;
+const defaultInitCapacity = 3;
 
 pub const TopicPartitionList = struct {
     cHandle: *c.rd_kafka_topic_partition_list_t,
@@ -34,7 +34,7 @@ pub const TopicPartitionList = struct {
 
     /// init creates a new list with a sane default capacity.
     pub fn init() Self {
-        return Self.initWithCapacity(defaultCapacity);
+        return Self.initWithCapacity(defaultInitCapacity);
     }
 
     /// initWithCapacity should be used when you know the capacity up front
@@ -126,6 +126,7 @@ pub const TopicPartitionList = struct {
     /// Returns: a new list fully populated to be identical to source.
     pub fn copy(self: Self) Self {
         const res = c.rd_kafka_topic_partition_list_copy(self.cHandle);
+
         return Self{
             .cHandle = res,
         };

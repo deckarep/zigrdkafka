@@ -41,6 +41,11 @@ pub const TopicConf = struct {
 
     const Self = @This();
 
+    /// init creates a new TopicConf and returns it.
+    /// Caller owns the newly returned TopicConf and therefore most ensure to
+    /// free it by calling .deinit().
+    /// If the TopicConf is given to a Producer or Consumer, the Producer or Consumer
+    /// will own it and will be responsible for freeing it.
     pub fn init() TopicConfResultError!Self {
         const handle = c.rd_kafka_topic_conf_new();
         if (handle) |h| {
@@ -52,8 +57,8 @@ pub const TopicConf = struct {
         }
     }
 
-    // deinit ensures proper cleanup. Only call this if you did not give this to a Kafka client.
-    // Giving it to a Kafka client, the client takes ownership and is responsibile for destory it.
+    /// deinit ensures proper cleanup. Only call this if you did not give this to a Kafka client.
+    /// Giving it to a Kafka client, the client takes ownership and is responsibile for destory it.
     pub fn deinit(self: Self) void {
         self.destroy();
     }
@@ -62,10 +67,15 @@ pub const TopicConf = struct {
         c.rd_kafka_topic_conf_destroy(self.cHandle);
     }
 
+    /// Handle returns a raw c pointer to the underlying datastructure.
+    /// End users of zigrdkafka should never need to call this.
     pub fn Handle(self: Self) *c.rd_kafka_topic_conf_t {
         return self.cHandle;
     }
 
+    /// get "returns" for a given name by populating a dest buffer.
+    /// This is built this way so you the caller gets to choose if dest is stack
+    /// or heap allocated.
     pub fn get(self: Self, name: [*:0]const u8, dest: []u8, destSize: *usize) TopicConfResultError!void {
         const res = c.rd_kafka_topic_conf_get(
             self.cHandle,
@@ -87,6 +97,8 @@ pub const TopicConf = struct {
         }
     }
 
+    /// set allows you to set a config name and value.
+    /// An error is returned in some scenarios.
     pub fn set(self: Self, name: [*:0]const u8, value: [*:0]const u8) TopicConfResultError!void {
         var errStr: [512]u8 = undefined;
         const pErrStr: [*c]u8 = @ptrCast(&errStr);
@@ -117,6 +129,7 @@ pub const TopicConf = struct {
         }
     }
 
+    /// dup simply creates a duplicate configuration.
     pub fn dup(self: Self) TopicConfResultError!Self {
         const res = c.rd_kafka_topic_conf_dup(self.cHandle);
         if (res) |h| {
@@ -125,6 +138,7 @@ pub const TopicConf = struct {
         return TopicConfResultError.Instantiation;
     }
 
+    /// dump simply dumps the configuration file to the logger.
     pub fn dump(self: Self) void {
         var cnt: usize = undefined;
         const arr = c.rd_kafka_topic_conf_dump(self.cHandle, &cnt);

@@ -60,8 +60,7 @@ pub fn main() !void {
 ```
 
 ## Currently Implemented
-  - [x] Conf ✅
-  - [x] TopicConf ✅
+  - [x] Conf + TopicConf ✅
   - [x] Uuid ✅
   - [x] Topic (in-progress)
   - [x] TopicPartition ✅
@@ -70,6 +69,10 @@ pub fn main() !void {
   - [x] Message (in-progress)
   - [x] Consumer (in-progress, but works!)
   - [x] Producer (in-progress, but works!)
+  - [ ] Support for librdkafka callbacks (not-started)
+  - [ ] Admin client (not-started)
+  - [ ] Proper error-handling (in-progress)
+  - [ ] etc. as there's a lot more to librdkafka than meets the eye.
 
 ## Warning
   * While both the Consumer and Producer work, some things are still hard-coded as this lib is

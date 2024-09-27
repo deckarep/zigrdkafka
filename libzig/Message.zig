@@ -23,6 +23,7 @@
 
 const std = @import("std");
 const c = @import("cdef.zig").cdef;
+const zrdk = @import("zigrdkafka.zig");
 
 pub const Message = struct {
     cHandle: ?*c.struct_rd_kafka_message_s,
@@ -43,13 +44,24 @@ pub const Message = struct {
         return self.cHandle == null;
     }
 
-    // TODO: a message also hold a raw pointer to *rkt which needs to get extracted too.
+    /// topic returns the Topic struct.
+    pub fn topic(self: Self) zrdk.Topic {
+        return zrdk.Topic.wrap(self.cHandle.?.rkt.?);
+    }
 
     // TODO: don't return raw c_int, it should be a Zig error type.
     pub inline fn err(self: Self) c_int {
         // Note: When checking err() you must have already ruled out
         // the message is not empty.
         return self.cHandle.?.err;
+    }
+
+    /// errorAsString is a convenience method that returns the error as a string.
+    pub fn errorAsString(self: Self) []const u8 {
+        if (self.err() != 0) {
+            return self.payloadAsString();
+        }
+        return "<no-error>";
     }
 
     /// Partition is the partition this message lives on.
@@ -92,14 +104,15 @@ pub const Message = struct {
     /// Consumer: Depends on the value of err:
     ///     err == 0: Message payload.
     ///     err != 0: Error string.
-    pub fn payloadAsString(self: Self) ?[]const u8 {
+    pub fn payloadAsString(self: Self) []const u8 {
         if (self.cHandle.?.payload) |p| {
             const pLen = self.len();
             const bytePtr: [*c]const u8 = @ptrCast(p);
             const result = bytePtr[0..pLen];
             return result;
         }
-        return null;
+
+        return "<empty>";
     }
 
     /// Depends on the value of err:

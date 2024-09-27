@@ -35,6 +35,10 @@ pub const Topic = struct {
 
     const Self = @This();
 
+    pub fn wrap(cPtr: *c.rd_kafka_topic_t) Self {
+        return Self{ .cHandle = cPtr };
+    }
+
     // TODO: new should take a generic Handle type me thinks.
     pub fn init(client: zrdk.Handle, topicName: [:0]const u8, conf: zrdk.TopicConf) TopicResultError!Self {
         const handle = c.rd_kafka_topic_new(
@@ -61,11 +65,22 @@ pub const Topic = struct {
         c.rd_kafka_topic_destroy(self.cHandle);
     }
 
-    fn name(self: Self) []const u8 {
+    /// Returns the name of the topic.
+    pub fn name(self: Self) []const u8 {
         const res = c.rd_kafka_topic_name(self.cHandle);
-        return std.mem.spand(res);
+        return std.mem.span(res);
     }
 
-    // TODO: partition_available(); // WARNING: MUST ONLY be called from within a RdKafka PartitionerCb callback.
-    // TODO: offset_store(); // Deprecated.
+    /// WARNING: MUST ONLY be called from within a RdKafka PartitionerCb callback.
+    pub fn partitionAvailable(self: Self, partition: i32) bool {
+        return c.rd_kafka_topic_partition_available(self.cHandle, partition) == 1;
+    }
+
+    /// offsetStore ...TODO docs and don't use c_int, use a real Error type.
+    pub fn offsetStore(self: Self, partition: i32, offset: i64) c_int {
+        _ = self;
+        _ = partition;
+        _ = offset;
+        @panic("offsetStore is deprecated and therefore unreachable!");
+    }
 };

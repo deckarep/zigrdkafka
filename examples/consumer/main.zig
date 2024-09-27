@@ -73,8 +73,8 @@ pub fn main() !void {
         }
 
         // Proper message below.
-        std.log.info("message on <topic-name>, partition: {d}, offset: {d}", .{
-            // TODO: Get <topic-name> from *rkt inside raw c Message.
+        std.log.info("message on {s}, partition: {d}, offset: {d}", .{
+            msg.topic().name(),
             msg.partition(),
             msg.offset(),
         });
@@ -82,9 +82,7 @@ pub fn main() !void {
         // TODO: If message has a "key" print it.
 
         // Print the message value/payload
-        if (msg.payloadAsString()) |str| {
-            std.log.info("Payload as a string {s}", .{str});
-        }
+        std.log.info("Payload as a string {s}", .{msg.payloadAsString()});
 
         count += 1;
     }

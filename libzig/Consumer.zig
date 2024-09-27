@@ -78,25 +78,24 @@ pub const Consumer = struct {
         _ = c.rd_kafka_consumer_close(self.cClient);
     }
 
-    pub fn subscribe(self: Self, topics: []const []const u8) void {
+    pub fn subscribe(self: Self, topics: []const [:0]const u8) void {
         // Convert list of topics to a format suitable for librdkafka.
-        const len: c_int = @intCast(topics.len);
-        const topicSubscriptions = c.rd_kafka_topic_partition_list_new(len);
-        defer c.rd_kafka_topic_partition_list_destroy(topicSubscriptions);
+        const topicSubs = zrdk.TopicPartitionList.initWithCapacity(topics.len);
+        defer topicSubs.deinit();
 
         for (topics) |t| {
-            _ = c.rd_kafka_topic_partition_list_add(
-                topicSubscriptions,
-                @ptrCast(t),
-                c.RD_KAFKA_PARTITION_UA,
-            );
+            // TODO: .add might return an error in the future.
+            topicSubs.add(t, c.RD_KAFKA_PARTITION_UA);
         }
 
         // Subscribe to the list of topics.
         // TODO: handle error.
-        _ = c.rd_kafka_subscribe(self.cClient, topicSubscriptions);
+        _ = c.rd_kafka_subscribe(self.cClient, topicSubs.Handle());
 
-        std.log.info("Subscribed to {d} topic(s), waiting for rebalance and messages...", .{topicSubscriptions.*.cnt});
+        std.log.info(
+            "Subscribed to {d} topic(s), waiting for rebalance and messages...",
+            .{topicSubs.count()},
+        );
     }
 
     // TODO: commitMessage is important yall.

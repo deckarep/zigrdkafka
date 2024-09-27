@@ -30,6 +30,10 @@ pub const TopicPartition = struct {
 
     const Self = @This();
 
+    pub fn wrap(cPtr: *allowzero c.rd_kafka_topic_partition_t) Self {
+        return Self{ .cHandle = cPtr };
+    }
+
     pub fn topic(self: Self) [:0]const u8 {
         return std.mem.span(self.cHandle.topic);
     }

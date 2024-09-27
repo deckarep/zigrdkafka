@@ -42,7 +42,6 @@ pub fn main() !void {
 
     const brokers = "localhost:9092";
     const groupid = "zig-cli-consumer";
-    const topics = [_][]const u8{"topic.foo"};
 
     const conf = try zrdk.Conf.init();
     try conf.set("bootstrap.servers", brokers);
@@ -53,12 +52,14 @@ pub fn main() !void {
     defer consumer.deinit();
     defer consumer.close();
 
-    consumer.subscribe(&topics);
+    consumer.subscribe(&.{"topic.foo"});
 
     var count: usize = 0;
     while (count < 5) {
         const msg = consumer.poll(100);
         defer msg.deinit();
+
+        defer count += 1;
 
         // Message could be empty because the consumer timed out.
         if (msg.isEmpty()) {
@@ -79,8 +80,6 @@ pub fn main() !void {
             msg.partition(),
             msg.offset(),
         });
-
-        count += 1;
     }
 
     std.log.info("consumer loop ended.", .{});

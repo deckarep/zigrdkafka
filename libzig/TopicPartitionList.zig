@@ -50,9 +50,14 @@ pub const TopicPartitionList = struct {
         c.rd_kafka_topic_partition_list_destroy(self.cHandle);
     }
 
+    pub fn Handle(self: Self) *c.rd_kafka_topic_partition_list_t {
+        return self.cHandle;
+    }
+
     pub fn elemAt(self: Self, index: usize) ?zrdk.TopicPartition {
         if (index <= self.cHandle.cnt - 1) {
-            return zrdk.TopicPartition{ .cHandle = &self.cHandle.elems[index] };
+            return zrdk.TopicPartition.wrap(&self.cHandle.elems[index]);
+            //return zrdk.TopicPartition{ .cHandle = &self.cHandle.elems[index] };
         }
         return null;
     }

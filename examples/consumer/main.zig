@@ -143,7 +143,16 @@ pub fn testTopicPartitionList() !void {
     std.debug.assert(tpl.count() == 6);
 
     // sort
-    tpl.sort(null, null);
+    const cmp = struct {
+        fn inner(a: ?*const anyopaque, b: ?*const anyopaque, cmpOpaque: ?*anyopaque) callconv(.C) c_int {
+            _ = a;
+            _ = b;
+            _ = cmpOpaque;
+            return -1;
+        }
+    };
+
+    tpl.sort(cmp.inner);
 }
 
 pub fn testUUID(first: i64, second: i64) !void {

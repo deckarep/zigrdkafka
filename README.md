@@ -136,3 +136,6 @@ zig build
   * C-based `_destroy()` => `.deinit()` for Zig.
   * Use of Zig-flavored callbacks so user doesn't need to declare fn with `callconv(.C)`.
   * librdkafka doesn't expose allocators the way Zig prefers, not sure if there is a way around this.
+
+  ### Other implementations
+    * [Ruby](https://github.com/deadmanssnitch/kafka/tree/4e61b272e91d9a98f9eb97cf044ab3064e57712a/lib/kafka/ffi) 

@@ -28,9 +28,27 @@ pub fn main() !void {
   try consumer.subscribe(&topics);
 
   while (true) {
-      // Note: how work is done is not yet well-defined.
-      // To be continued.
-      try consumer.doWork();
+    const msg = consumer.poll(100);
+    defer msg.deinit();
+
+    // Message could be empty because the consumer timed out.
+    if (msg.isEmpty()) {
+        // when consumer times out with no message, msg is simply empty.
+        continue;
+    }
+
+    // The message could also have an associated error.
+    if (msg.err() != 0) {
+        // handle err
+        continue;
+    }
+
+    // Log the payload as a string.
+    if (msg.payloadAsString()) |str| {
+        std.log.info("Payload as a string {s}", .{str});
+    }
+
+    count += 1;
   }
 
   std.log.info("Consumer loop ended!", .{});

@@ -27,6 +27,23 @@ const zrdk = @import("zigrdkafka.zig");
 
 const defaultInitCapacity = 3;
 
+// WARNING: THIS comparator shit DON'T WORK YET!!!!
+//pub const SortCallback = *const fn ([*c]const u8, [*c]c_uint) callconv(.C) [*c]u8;
+pub const SortCallback = ?*const fn (?*const anyopaque, ?*const anyopaque, ?*anyopaque) callconv(.C) c_int;
+
+pub fn sortComparator() ?*const fn (?*const anyopaque, ?*const anyopaque, ?*anyopaque) callconv(.C) c_int {
+    return struct {
+        userCallback: *const fn (a: ?*const anyopaque, b: ?*const anyopaque, cmpOpaque: ?*anyopaque) callconv(.C) c_int,
+
+        const Self = @This();
+
+        /// This func wraps the userCallback, but this one adheres to the .C callconv and librdkafka needs that form.
+        fn rawCComparator(self: Self, a: ?*const anyopaque, b: ?*const anyopaque, cmpOpaque: ?*anyopaque) callconv(.C) c_int {
+            return self.userCallback(a, b, cmpOpaque);
+        }
+    }.rawCComparator;
+}
+
 pub const TopicPartitionList = struct {
     cHandle: *c.rd_kafka_topic_partition_list_t,
 
@@ -158,6 +175,16 @@ pub const TopicPartitionList = struct {
         }
 
         return null;
+    }
+
+    /// sortDefault uses the default comparator which sorts by ascending topic name and partition.
+    pub fn sortDefault(self: Self) void {
+        self.sort(null, null);
+    }
+
+    /// sort allows you to specifiy a custom sort.
+    pub fn sort(self: Self, cmpCallback: SortCallback, cmpOpaque: ?*anyopaque) void {
+        c.rd_kafka_topic_partition_list_sort(self.cHandle, cmpCallback, cmpOpaque);
     }
 
     // NOTE: this requires a a comparator function arg.

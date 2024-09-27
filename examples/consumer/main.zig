@@ -141,6 +141,9 @@ pub fn testTopicPartitionList() !void {
     std.debug.assert(tpl.delAt(0));
 
     std.debug.assert(tpl.count() == 6);
+
+    // sort
+    tpl.sort(null, null);
 }
 
 pub fn testUUID(first: i64, second: i64) !void {

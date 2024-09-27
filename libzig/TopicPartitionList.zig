@@ -25,15 +25,20 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 const zrdk = @import("zigrdkafka.zig");
 
+const defaultCapacity = 3;
+
 pub const TopicPartitionList = struct {
     cHandle: *c.rd_kafka_topic_partition_list_t,
 
     const Self = @This();
 
+    /// init creates a new list with a sane default capacity.
     pub fn init() Self {
-        return Self.initWithCapacity(0);
+        return Self.initWithCapacity(defaultCapacity);
     }
 
+    /// initWithCapacity should be used when you know the capacity up front
+    /// to reduce unecessary allocations.
     pub fn initWithCapacity(capacity: usize) Self {
         const size: c_int = @intCast(capacity);
         const res = c.rd_kafka_topic_partition_list_new(size);
@@ -46,14 +51,19 @@ pub const TopicPartitionList = struct {
         self.destroy();
     }
 
+    /// destroys the underlying raw c pointer.
     fn destroy(self: Self) void {
         c.rd_kafka_topic_partition_list_destroy(self.cHandle);
     }
 
+    /// Handle returns the raw c underlying pointer.
+    /// End users of this zigrdkakfa should never need to use this.
     pub fn Handle(self: Self) *c.rd_kafka_topic_partition_list_t {
         return self.cHandle;
     }
 
+    /// elemAt returns element at the supplied index, if the index is out of
+    /// bounds null is returned.
     pub fn elemAt(self: Self, index: usize) ?zrdk.TopicPartition {
         if (index <= self.cHandle.cnt - 1) {
             return zrdk.TopicPartition.wrap(&self.cHandle.elems[index]);
@@ -62,10 +72,12 @@ pub const TopicPartitionList = struct {
         return null;
     }
 
+    /// count returns a count of the elements in this list.
     pub fn count(self: Self) usize {
         return @intCast(self.cHandle.cnt);
     }
 
+    /// cap returns the allocated capacity of the list.
     pub fn cap(self: Self) usize {
         return @intCast(self.cHandle.size);
     }

@@ -142,13 +142,16 @@ pub fn testTopicPartitionList() !void {
 
     std.debug.assert(tpl.count() == 6);
 
-    // sort
+    // userSort
     const cmp = struct {
-        fn inner(a: ?*const anyopaque, b: ?*const anyopaque, cmpOpaque: ?*anyopaque) callconv(.C) c_int {
-            _ = a;
-            _ = b;
-            _ = cmpOpaque;
-            return -1;
+        fn inner(a: zrdk.TopicPartition, b: zrdk.TopicPartition) i32 {
+            if (a.partition() < b.partition()) {
+                return 1;
+            } else if (a.partition() > b.partition()) {
+                return -1;
+            } else {
+                return 0;
+            }
         }
     };
 

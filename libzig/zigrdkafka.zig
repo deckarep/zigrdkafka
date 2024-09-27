@@ -44,6 +44,7 @@ pub const Message = msg.Message;
 pub const TopicConf = topCfg.TopicConf;
 pub const Topic = top.Topic;
 pub const TopicPartitionList = tpl.TopicPartitionList;
+pub const TopicPartitionListSortCmp = tpl.SortComparator;
 pub const TopicPartition = tp.TopicPartition;
 pub const Headers = hdrs.Headers;
 pub const LogLevel = cfg.LogLevel;

@@ -27,22 +27,7 @@ const zrdk = @import("zigrdkafka.zig");
 
 const defaultInitCapacity = 3;
 
-// WARNING: THIS comparator shit DON'T WORK YET!!!!
-//pub const SortCallback = *const fn ([*c]const u8, [*c]c_uint) callconv(.C) [*c]u8;
-pub const SortCallback = *const fn (?*const anyopaque, ?*const anyopaque, ?*anyopaque) callconv(.C) c_int;
-
-// pub fn sortComparator() ?*const fn (?*const anyopaque, ?*const anyopaque, ?*anyopaque) callconv(.C) c_int {
-//     return struct {
-//         userCallback: *const fn (a: ?*const anyopaque, b: ?*const anyopaque, cmpOpaque: ?*anyopaque) callconv(.C) c_int,
-
-//         const Self = @This();
-
-//         /// This func wraps the userCallback, but this one adheres to the .C callconv and librdkafka needs that form.
-//         fn rawCComparator(self: Self, a: ?*const anyopaque, b: ?*const anyopaque, _: ?*anyopaque) callconv(.C) c_int {
-//             return self.userCallback(a, b, null);
-//         }
-//     }.rawCComparator;
-// }
+pub const UserSortCallback = *const fn (zrdk.TopicPartition, zrdk.TopicPartition) i32;
 
 pub const TopicPartitionList = struct {
     cHandle: *c.rd_kafka_topic_partition_list_t,
@@ -186,9 +171,29 @@ pub const TopicPartitionList = struct {
     /// Sort can take a block that should implement a standard comparison
     /// function that returns -1, 0, or 1 depending on if
     /// left is less than, equal to, or greater than the right argument.
-    pub fn sort(self: Self, cmpCallback: SortCallback) void {
-        // NOTE: It's not clear to me what is supposed to be passed to the cmp_opaque arg or why it's even useful.
-        // So we pass null and things still work. #yolo
-        c.rd_kafka_topic_partition_list_sort(self.cHandle, cmpCallback, null);
+    pub fn sort(self: Self, cb: UserSortCallback) void {
+        // This internal cmp adheres to the C-ABI and is the real callback that is passed to librdkafka sort function.
+        // It does the following:
+        // 1. Casts the two compared types a and b to their natural librdkafka pointer types.
+        // 2. Wraps them in the Zig zigrdkafa zrdk.TopicPartition type
+        // 3. Casts the cmpOpaque to the end-user callback
+        // 4. Calls the end-user callback and returns the comparison int value.
+        // 5. The entire purpose of this is so the end-user doesn't have to work with C-ABI and C librdafka directly.
+        const cmp = struct {
+            fn inner(a: ?*const anyopaque, b: ?*const anyopaque, cmpOpaque: ?*anyopaque) callconv(.C) c_int {
+                const left = @as(*c.rd_kafka_topic_partition_t, @constCast(@alignCast(@ptrCast(a.?))));
+                const leftWrapped = zrdk.TopicPartition.wrap(left);
+
+                const right = @as(*c.rd_kafka_topic_partition_t, @constCast(@alignCast(@ptrCast(b.?))));
+                const rightWrapped = zrdk.TopicPartition.wrap(right);
+
+                const userCallback = @as(UserSortCallback, @alignCast(@ptrCast(cmpOpaque.?)));
+                const res = userCallback(leftWrapped, rightWrapped);
+                return @intCast(res);
+            }
+        };
+
+        const opaqueCb = @as(?*anyopaque, @constCast(cb));
+        c.rd_kafka_topic_partition_list_sort(self.cHandle, cmp.inner, opaqueCb);
     }
 };

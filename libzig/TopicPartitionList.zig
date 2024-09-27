@@ -182,9 +182,9 @@ pub const TopicPartitionList = struct {
         const cmp = struct {
             fn inner(a: ?*const anyopaque, b: ?*const anyopaque, cmpOpaque: ?*anyopaque) callconv(.C) c_int {
                 const left = @as(*c.rd_kafka_topic_partition_t, @constCast(@alignCast(@ptrCast(a.?))));
-                const leftWrapped = zrdk.TopicPartition.wrap(left);
-
                 const right = @as(*c.rd_kafka_topic_partition_t, @constCast(@alignCast(@ptrCast(b.?))));
+
+                const leftWrapped = zrdk.TopicPartition.wrap(left);
                 const rightWrapped = zrdk.TopicPartition.wrap(right);
 
                 const userCallback = @as(UserSortCallback, @alignCast(@ptrCast(cmpOpaque.?)));
@@ -193,6 +193,7 @@ pub const TopicPartitionList = struct {
             }
         };
 
+        // Package up the users callback as an opaque pointer, and send it!
         const opaqueCb = @as(?*anyopaque, @constCast(cb));
         c.rd_kafka_topic_partition_list_sort(self.cHandle, cmp.inner, opaqueCb);
     }

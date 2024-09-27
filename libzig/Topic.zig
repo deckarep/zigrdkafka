@@ -47,7 +47,7 @@ pub const Topic = struct {
             conf.Handle(),
         );
         if (handle) |h| {
-            return Self{ .cHandle = h };
+            return Topic.wrap(h);
         }
 
         return TopicResultError.Instantiation;

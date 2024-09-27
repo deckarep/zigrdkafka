@@ -43,10 +43,13 @@ pub fn main() !void {
         continue;
     }
 
-    // Log the payload as a string.
-    if (msg.payloadAsString()) |str| {
-        std.log.info("Payload as a string {s}", .{str});
-    }
+    // Log the message.
+    std.log.info("message => {s}\ntopic => {s}\npartition => {d}\noffset => {d}\n", .{
+        msg.payloadAsString(),
+        msg.topic().name(),
+        msg.partition(),
+        msg.offset(),
+    });
 
     count += 1;
   }

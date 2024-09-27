@@ -72,17 +72,13 @@ pub fn main() !void {
             continue;
         }
 
-        // Proper message below.
-        std.log.info("message on {s}, partition: {d}, offset: {d}", .{
+        // Log the message.
+        std.log.info("message => {s}\ntopic => {s}\npartition => {d}\noffset => {d}\n", .{
+            msg.payloadAsString(),
             msg.topic().name(),
             msg.partition(),
             msg.offset(),
         });
-
-        // TODO: If message has a "key" print it.
-
-        // Print the message value/payload
-        std.log.info("Payload as a string {s}", .{msg.payloadAsString()});
 
         count += 1;
     }

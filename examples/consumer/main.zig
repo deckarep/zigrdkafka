@@ -58,7 +58,7 @@ pub fn main() !void {
     var count: usize = 0;
     while (count < 5) {
         const msg = consumer.poll(100);
-        msg.deinit();
+        defer msg.deinit();
 
         // Message could be empty because the consumer timed out.
         if (msg.isEmpty()) {

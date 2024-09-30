@@ -71,6 +71,17 @@ pub const Topic = struct {
         return std.mem.span(res);
     }
 
+    /// Seek consumer for topic_partition to offset.
+    pub fn seek(self: Self, partition: i32, offset: i64, milliseconds: u64) void {
+        // TODO: this can return an error.
+        _ = c.rd_kafka_seek(
+            self.cHandle,
+            partition,
+            offset,
+            @intCast(milliseconds),
+        );
+    }
+
     /// WARNING: MUST ONLY be called from within a RdKafka PartitionerCb callback.
     pub fn partitionAvailable(self: Self, partition: i32) bool {
         return c.rd_kafka_topic_partition_available(self.cHandle, partition) == 1;

@@ -51,9 +51,14 @@ pub const Conf = struct {
     pub fn init() ConfResultError!Self {
         const handle = c.rd_kafka_conf_new();
         if (handle) |h| {
-            return Self{
+            const cfg = Self{
                 .cHandle = h,
             };
+
+            try cfg.set("client.software.name", "zigrdkafka");
+            try cfg.set("client.software.version", cfg.softwareVersion());
+
+            return cfg;
         } else {
             return ConfResultError.Instantiation;
         }
@@ -132,6 +137,8 @@ pub const Conf = struct {
         return ConfResultError.Instantiation;
     }
 
+    // TODO: dupFilter
+
     pub fn dump(self: Self) void {
         var cnt: usize = undefined;
         const arr = c.rd_kafka_conf_dump(self.cHandle, &cnt);
@@ -171,6 +178,14 @@ pub const Conf = struct {
         // TODO: Hmm, why is this not on the conf object? and the above method is?
         //return c.rd_kafka_opaque(rk: ?*const rd_kafka_t)
         return null;
+    }
+
+    pub fn softwareVersion(self: Self) [:0]const u8 {
+        _ = self;
+        // Format must match /^([\.\-a-zA-Z0-9])+$/ per Validation section of
+        // KIP-511.
+        // v0.5.2-zigrdkafka-v0.0.1-zig-0.13.0
+        return "v0.5.2-zigrdkafka-v0.0.1-zig-0.13.0";
     }
 
     // TODO: read docs and understand this api.

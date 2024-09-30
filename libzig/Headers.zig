@@ -98,9 +98,49 @@ pub const Headers = struct {
         _ = c.rd_kafka_header_remove(self.cHandle, @ptrCast(name));
     }
 
-    /// getLast returns a reference to a string slice where the lifetime of the string
-    /// is as long as the header list.
-    pub fn getLast(self: Self, name: [:0]const u8) HeadersRespError![]const u8 {
+    /// headerAt (get) returns a reference to a string slice where the lifetime of the string
+    /// is as long as the header is alive in the header list.
+    ///
+    /// How it works: Iterator index, start at 0 and increment by one for each call as long as
+    /// RD_KAFKA_RESP_ERR_NO_ERROR is returned.
+    pub fn headerAt(self: Self, idx: usize, name: [:0]const u8) HeadersRespError![]const u8 {
+        // size is populated in the rd_kafka_header_get call.
+        var size: usize = 0;
+
+        // We need to correctly pass a pointer to a pointer that will simply store
+        // the address of where the null-terminated string is located.
+        var value: u8 = undefined;
+        var valueP: ?*const u8 = &value;
+        const valuePP = @as(*?*const anyopaque, @ptrCast(&valueP));
+
+        const res = c.rd_kafka_header_get(
+            self.cHandle,
+            idx,
+            @ptrCast(name),
+            valuePP,
+            &size,
+        );
+
+        // TODO: handle this error.
+        std.log.info("getLast err result => {d}", .{res});
+
+        if (res != 0) {
+            // Made up error for now.
+            return HeadersRespError.NotFound;
+        }
+
+        if (valueP) |ptr| {
+            // Convert to a multi-pointer which can safely be sliced with our known bounds.
+            const multiPtr = @as([*]const u8, @ptrCast(ptr));
+            return multiPtr[0..size];
+        }
+
+        return "<value-not-found>";
+    }
+
+    /// last (getLast) returns a reference to a string slice where the lifetime of the string
+    /// is as long as the header is alive in the header list.
+    pub fn last(self: Self, name: [:0]const u8) HeadersRespError![]const u8 {
         // size is populated in the rd_kafka_header_get_last call.
         var size: usize = 0;
 
@@ -134,7 +174,5 @@ pub const Headers = struct {
         return "<value-not-found>";
     }
 
-    // TODO: get_last
-    // TODO: get
     // TODO: get_all
 };

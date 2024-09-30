@@ -205,10 +205,26 @@ pub fn testHeaders() !void {
 
     try hdrs.addZ("Hello", "aaa");
     try hdrs.addZ("How", "bbbb");
+    try hdrs.addZ("How", "eeeeeee");
+    try hdrs.addZ("How", "dddddddddddd");
+    try hdrs.addZ("How", "ggggggggggggggggg");
     try hdrs.addZ("What", "ccccc");
 
     std.log.info("headers count => {d}", .{hdrs.count()});
 
-    const strResult = try hdrs.getLast("How");
+    const strResult = try hdrs.last("How");
     std.log.info("strResult => {s}", .{strResult});
+
+    var i: usize = 0;
+    while (true) : (i += 1) {
+        if (hdrs.headerAt(i, "How")) |res| {
+            std.log.info("idx => {d} at str: {s}", .{ i, res });
+        } else |err| switch (err) {
+            zrdk.HeadersRespError.NotFound => {
+                std.log.info("reached the end of the list!", .{});
+                break;
+            },
+            else => |otherErr| return otherErr,
+        }
+    }
 }

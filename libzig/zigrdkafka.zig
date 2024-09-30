@@ -47,6 +47,7 @@ pub const TopicPartitionList = tpl.TopicPartitionList;
 pub const TopicPartitionListSortCmp = tpl.SortComparator;
 pub const TopicPartition = tp.TopicPartition;
 pub const Headers = hdrs.Headers;
+pub const HeadersRespError = hdrs.HeadersRespError;
 pub const LogLevel = cfg.LogLevel;
 pub const Producer = prd.Producer;
 pub const Consumer = csmr.Consumer;

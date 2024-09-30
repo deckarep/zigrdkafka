@@ -26,6 +26,7 @@ const c = @import("cdef.zig").cdef;
 
 pub const HeadersRespError = error{
     Instantiation,
+    NotFound, // <-- i made this up on getLast...just to return something useful.
     // TODO: other types of errors that this can return ultimately.
 };
 
@@ -97,18 +98,40 @@ pub const Headers = struct {
         _ = c.rd_kafka_header_remove(self.cHandle, @ptrCast(name));
     }
 
-    pub fn getLast(self: Self, name: [:0]const u8, valueP: [*c]?*const anyopaque, sizeP: *usize) HeadersRespError!void {
-        // TODO: handle this error.
+    /// getLast returns a reference to a string slice where the lifetime of the string
+    /// is as long as the header list.
+    pub fn getLast(self: Self, name: [:0]const u8) HeadersRespError![]const u8 {
+        // size is populated in the rd_kafka_header_get_last call.
+        var size: usize = 0;
 
-        std.log.info("about to do call!!!", .{});
+        // We need to correctly pass a pointer to a pointer that will simply store
+        // the address of where the null-terminated string is located.
+        var value: u8 = undefined;
+        var valueP: ?*const u8 = &value;
+        const valuePP = @as(*?*const anyopaque, @ptrCast(&valueP));
+
         const res = c.rd_kafka_header_get_last(
             self.cHandle,
             @ptrCast(name),
-            valueP,
-            sizeP,
+            valuePP,
+            &size,
         );
 
+        // TODO: handle this error.
         std.log.info("getLast err result => {d}", .{res});
+
+        if (res != 0) {
+            // Made up error for now.
+            return HeadersRespError.NotFound;
+        }
+
+        if (valueP) |ptr| {
+            // Convert to a multi-pointer which can safely be sliced with our known bounds.
+            const multiPtr = @as([*]const u8, @ptrCast(ptr));
+            return multiPtr[0..size];
+        }
+
+        return "<value-not-found>";
     }
 
     // TODO: get_last

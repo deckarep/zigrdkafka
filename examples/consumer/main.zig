@@ -209,13 +209,6 @@ pub fn testHeaders() !void {
 
     std.log.info("headers count => {d}", .{hdrs.count()});
 
-    var value: u8 = undefined;
-    var valueP: ?*const u8 = &value;
-    const valuePP = @as([*c]?*const anyopaque, @ptrCast(&valueP));
-    var size: usize = 0;
-    try hdrs.getLast("Hello", valuePP, &size);
-
-    if (valueP) |ptr| {
-        std.log.info("myValue => {d}, mySize => {d}", .{ ptr.*, size });
-    }
+    const strResult = try hdrs.getLast("How");
+    std.log.info("strResult => {s}", .{strResult});
 }

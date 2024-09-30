@@ -203,9 +203,19 @@ pub fn testHeaders() !void {
     const hdrs = try zrdk.Headers.init();
     defer hdrs.deinit();
 
-    try hdrs.add("Hello", "World!");
-    try hdrs.add("How", "Are You?");
-    try hdrs.add("What", "me worry?");
+    try hdrs.addZ("Hello", "aaa");
+    try hdrs.addZ("How", "bbbb");
+    try hdrs.addZ("What", "ccccc");
 
     std.log.info("headers count => {d}", .{hdrs.count()});
+
+    var value: u8 = undefined;
+    var valueP: ?*const u8 = &value;
+    const valuePP = @as([*c]?*const anyopaque, @ptrCast(&valueP));
+    var size: usize = 0;
+    try hdrs.getLast("Hello", valuePP, &size);
+
+    if (valueP) |ptr| {
+        std.log.info("myValue => {d}, mySize => {d}", .{ ptr.*, size });
+    }
 }

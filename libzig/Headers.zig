@@ -39,11 +39,9 @@ pub const Headers = struct {
     }
 
     pub fn initWithCapacity(initialCount: usize) HeadersRespError!Headers {
-        const hdrs = c.rd_kafka_headers_new(initialCount);
-        if (hdrs) |h| {
+        if (c.rd_kafka_headers_new(initialCount)) |h| {
             return Self{ .cHandle = h };
         }
-
         return HeadersRespError.Instantiation;
     }
 
@@ -97,6 +95,20 @@ pub const Headers = struct {
     pub fn remove(self: Self, name: []const u8) HeadersRespError!void {
         // TODO: handle this error.
         _ = c.rd_kafka_header_remove(self.cHandle, @ptrCast(name));
+    }
+
+    pub fn getLast(self: Self, name: [:0]const u8, valueP: [*c]?*const anyopaque, sizeP: *usize) HeadersRespError!void {
+        // TODO: handle this error.
+
+        std.log.info("about to do call!!!", .{});
+        const res = c.rd_kafka_header_get_last(
+            self.cHandle,
+            @ptrCast(name),
+            valueP,
+            sizeP,
+        );
+
+        std.log.info("getLast err result => {d}", .{res});
     }
 
     // TODO: get_last

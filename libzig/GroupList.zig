@@ -25,55 +25,20 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 const zrdk = @import("zigrdkafka.zig");
 
-pub const GroupInfoRespError = error{
-    Instantiation,
-};
-
-pub const GroupInfo = struct {
-    cHandle: *c.struct_rd_kafka_group_info,
-
+pub const GroupList = struct {
     const Self = @This();
 
+    cHandle: *c.struct_rd_kafka_group_list,
+
     // A convenience function to wrap a raw pointer.
-    pub inline fn wrap(rawPtr: *c.struct_rd_kafka_group_info) Self {
+    pub inline fn wrap(rawPtr: *c.struct_rd_kafka_group_list) Self {
         return Self{ .cHandle = rawPtr };
     }
 
-    /// Returns the Broker's cluster ID.
-    pub inline fn broker(self: Self) []const u8 {
-        return self.cHandle.broker;
-    }
+    // TODO: groups() getter.
 
-    /// Returns the name of the group.
-    pub inline fn group(self: Self) []const u8 {
-        return std.mem.span(self.cHandle.group);
-    }
-
-    /// Returns any broker originated error for the consumer group.
-    pub inline fn err(self: Self) c_int {
-        // TODO: this needs to return a wrapped error not a raw c_int.
-        return self.cHandle.err;
-    }
-
-    /// Returns the current state of the group.
-    pub inline fn state(self: Self) []const u8 {
-        return std.mem.span(self.cHandle.state);
-    }
-
-    /// Returns the group protocol type.
-    pub inline fn protocolType(self: Self) []const u8 {
-        return std.mem.span(self.cHandle.protocol_type);
-    }
-
-    /// Returns the group protocol.
-    pub inline fn protocol(self: Self) []const u8 {
-        return std.mem.span(self.cHandle.protocol);
-    }
-
-    // TODO: members()
-
-    // TODO: membersCount()
-    pub inline fn membersCount(self: Self) usize {
-        return @intCast(self.cHandle.member_cnt);
+    /// Release the resources used by the group list back to the system.
+    pub inline fn destroy(self: Self) []const u8 {
+        c.rd_kafka_group_list_destroy(self.cHandle);
     }
 };

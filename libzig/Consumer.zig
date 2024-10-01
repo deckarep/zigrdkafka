@@ -82,6 +82,29 @@ pub const Consumer = struct {
         return std.mem.span(res);
     }
 
+    /// Get last known low (oldest/beginning) and high (newest/end) offsets for partition.
+    /// The low offset is updated periodically (if statitiscs.interval.ms is set) while the
+    /// high offset is updated on each fetched message set from the broker.
+    ///
+    /// If there is no cached offset (either low or high, or both) then RD_KAFKA_OFFSET_INVALID
+    /// will be returned for the respective offset.
+    ///
+    /// Offsets are returned in *low and *high respectively.
+    ///
+    /// Remarks: Shall only be used with an active consumer instance.
+    pub fn getWatermarkOffsets(self: Self, topic: [:0]const u8, partition: i32, low: *i64, high: *i64) void {
+        // TODO: handle and return error.
+        const res = c.rd_kafka_get_watermark_offsets(
+            self.cHandle,
+            @ptrCast(topic),
+            partition,
+            low,
+            high,
+        );
+
+        std.log.info("res of getWatermarkOffsets => {d}", .{res});
+    }
+
     /// Close down the consumer. This will block until the consumer has revoked
     /// its assignment(s), committed offsets, and left the consumer group. The
     /// maximum blocking time is roughly limited to the `session.timeout.ms`

@@ -30,6 +30,9 @@ pub fn main() !void {
     std.log.info("all your bases..blah, blah...", .{});
     std.log.info("kafka version => {s}", .{zrdk.kafkaVersionStr()});
 
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
     // try testTopicConf();
     try testTopicPartitionList();
     try testHeaders();
@@ -60,6 +63,12 @@ pub fn main() !void {
         defer msg.deinit();
 
         defer count += 1;
+
+        const memberStr = try consumer.memberId(allocator);
+        if (memberStr) |str| {
+            defer allocator.free(str);
+            std.log.info("member_id => {s}", .{str});
+        }
 
         if (!msg.isOK()) {
             std.log.warn("either message was empty or it had an error...", .{});

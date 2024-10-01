@@ -73,13 +73,29 @@ pub const Consumer = struct {
         };
     }
 
-    /// Retrieve the Consumer's broker assigned group Member ID.
-    pub fn memberId(self: Self) []const u8 {
+    /// Returns this client's broker-assigned group member id.
+    ///
+    /// Remarks: This currently requires the high-level KafkaConsumer.
+    ///
+    /// Returns: An allocated string containing the current broker-assigned group member id
+    /// or NULL if not available. Depending on the allocator, you must remember to free the
+    /// string.
+    pub fn memberId(self: Self, allocator: std.mem.Allocator) !?[]const u8 {
         const res = c.rd_kafka_memberid(self.cHandle);
-        if (res == null) {
-            return "<null>";
+        defer c.rd_kafka_mem_free(self.cHandle, res);
+
+        if (res != null) {
+            // To mitigate Zig end-users having to use the C api to free.
+            // We'll just use an allocator, make a copy and return that.
+            // This way, we immediately free the librdkafka returned string
+            // but the Zig user will receive a string managed with their choice of allocator.
+            const zigStr = std.mem.span(res);
+            const buf = try allocator.alloc(u8, zigStr.len);
+            @memcpy(buf, zigStr);
+            return buf;
         }
-        return std.mem.span(res);
+
+        return null;
     }
 
     /// Get last known low (oldest/beginning) and high (newest/end) offsets for partition.

@@ -75,6 +75,16 @@ pub const Consumer = struct {
         };
     }
 
+    /// Atomically assign the set of partitions to consume. This will replace the
+    /// existing assignment.
+    ///
+    /// @see rdkafka.h rd_kafka_assign for semantics on use from callbacks and
+    /// how empty vs NULL lists affect internal state.
+    pub fn assign(self: Self, topicPartitionList: zrdk.TopicPartitionList) void {
+        // TODO: handle error and return if present.
+        _ = c.rd_kafka_assign(self.cHandle, topicPartitionList.Handle());
+    }
+
     /// Returns this client's broker-assigned group member id.
     ///
     /// Remarks: This currently requires the high-level KafkaConsumer.
@@ -86,10 +96,13 @@ pub const Consumer = struct {
         defer c.rd_kafka_mem_free(self.cHandle, res);
 
         if (res != null) {
-            // To mitigate Zig end-users having to use the C api to free.
-            // We'll just use an allocator, make a copy and return that.
-            // This way, we immediately free the librdkafka returned string
-            // but the Zig user will receive a string managed with their choice of allocator.
+            // To mitigate Zig end-users having to use the raw C api to free:
+            //      We'll just use the passed allocator, make a copy and return that.
+            //      This way, we immediately free the librdkafka returned string
+            //      but the Zig user will receive a string managed with their choice of allocator.
+            //      Furthermore since this function takes an allocator parameter, Zig user's
+            //      should know that this function allocates and therefore needs to be balanced
+            //      with a call to free.
             const zigStr = std.mem.span(res);
             const buf = try allocator.alloc(u8, zigStr.len);
             @memcpy(buf, zigStr);

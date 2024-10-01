@@ -73,6 +73,15 @@ pub const Consumer = struct {
         };
     }
 
+    /// Retrieve the Consumer's broker assigned group Member ID.
+    pub fn memberId(self: Self) []const u8 {
+        const res = c.rd_kafka_memberid(self.cClient);
+        if (res == null) {
+            return "<null>";
+        }
+        return std.mem.span(res);
+    }
+
     /// Close down the consumer. This will block until the consumer has revoked
     /// its assignment(s), committed offsets, and left the consumer group. The
     /// maximum blocking time is roughly limited to the `session.timeout.ms`

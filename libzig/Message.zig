@@ -44,6 +44,12 @@ pub const Message = struct {
         }
     }
 
+    /// isOK is a zigrdkafka convenience method to quickly check that the message
+    /// is not empty and has no error.
+    pub inline fn isOK(self: Self) bool {
+        return !self.isEmpty() and self.err() == 0;
+    }
+
     pub inline fn isEmpty(self: Self) bool {
         return self.cHandle == null;
     }

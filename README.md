@@ -31,15 +31,9 @@ pub fn main() !void {
     const msg = consumer.poll(100);
     defer msg.deinit();
 
-    // Message could be empty because the consumer timed out.
-    if (msg.isEmpty()) {
-        // when consumer times out with no message, msg is simply empty.
-        continue;
-    }
-
-    // The message could also have an associated error.
-    if (msg.err() != 0) {
-        // handle err
+    if (!msg.isOK()) {
+        std.log.warn("either message was empty or it had an error...", .{});
+        // Deal with it here.
         continue;
     }
 

@@ -61,15 +61,9 @@ pub fn main() !void {
 
         defer count += 1;
 
-        // Message could be empty because the consumer timed out.
-        if (msg.isEmpty()) {
-            std.log.warn("consumer timeout occurred so nothing to do, continuing...", .{});
-            continue;
-        }
-
-        // The message could also have an associated error.
-        if (msg.err() != 0) {
-            std.log.warn("error occurred, do something with it...", .{});
+        if (!msg.isOK()) {
+            std.log.warn("either message was empty or it had an error...", .{});
+            // Deal with it here.
             continue;
         }
 

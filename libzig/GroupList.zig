@@ -37,11 +37,12 @@ pub const GroupList = struct {
 
     /// groupAt simply returns a slice of zrdk.GroupInfo objects.
     /// The lifetime of the zrdk.GroupInfo objects lives as long as this GroupList.
-    pub fn groups(self: Self, idx: usize) ?[]const zrdk.GroupInfo {
+    /// Note: untested!
+    pub fn groups(self: Self) ?[]const zrdk.GroupInfo {
         const cnt = self.count();
 
-        // If idx is in bounds.
-        if (idx <= cnt - 1) {
+        // If at least one item exists...
+        if (cnt >= 1) {
             // Cast to a multiPtr.
             const multiPtr = @as(
                 [*]const c.struct_rd_kafka_group_info,

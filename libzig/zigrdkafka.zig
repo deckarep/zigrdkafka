@@ -27,6 +27,7 @@ const c = @import("cdef.zig").cdef;
 
 const bm = @import("BrokerMetadata.zig");
 const cfg = @import("Conf.zig");
+const gi = @import("GroupInfo.zig");
 const topCfg = @import("TopicConf.zig");
 const top = @import("Topic.zig");
 const tp = @import("TopicPartition.zig");
@@ -44,6 +45,7 @@ pub const BrokerMetadata = bm.BrokerMetadata;
 pub const BrokerMetadataRespError = bm.BrokerMetadataRespError;
 pub const ConfResult = cfg.ConfResult;
 pub const Conf = cfg.Conf;
+pub const GroupInfo = gi.GroupInfo;
 pub const Message = msg.Message;
 pub const TopicConf = topCfg.TopicConf;
 pub const Topic = top.Topic;

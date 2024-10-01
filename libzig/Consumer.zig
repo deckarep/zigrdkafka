@@ -106,20 +106,32 @@ pub const Consumer = struct {
     /// If there is no cached offset (either low or high, or both) then RD_KAFKA_OFFSET_INVALID
     /// will be returned for the respective offset.
     ///
-    /// Offsets are returned in *low and *high respectively.
+    /// NOTE: Offsets are returned in as fields in a anonymous struct instead of using pointer
+    /// out params as the original librdkafka c code does.
     ///
     /// Remarks: Shall only be used with an active consumer instance.
-    pub fn getWatermarkOffsets(self: Self, topic: [:0]const u8, partition: i32, low: *i64, high: *i64) void {
+    pub fn getWatermarkOffsets(self: Self, topic: [:0]const u8, partition: i32) struct {
+        low: i64,
+        high: i64,
+    } {
         // TODO: handle and return error.
+        var low: i64 = undefined;
+        var high: i64 = undefined;
+
         const res = c.rd_kafka_get_watermark_offsets(
             self.cHandle,
             @ptrCast(topic),
             partition,
-            low,
-            high,
+            &low,
+            &high,
         );
 
         std.log.info("res of getWatermarkOffsets => {d}", .{res});
+
+        return .{
+            .low = low,
+            .high = high,
+        };
     }
 
     /// Redirect the main event queue to the Consumer's queue so the consumer

@@ -169,6 +169,8 @@ pub const Consumer = struct {
         );
     }
 
+    /// Unsubscribe from the current subscription set (e.g. all current
+    /// subscriptions).
     pub fn unsubscribe(self: Self) void {
         // TODO: handle and return error.
         _ = c.rd_kafka_unsubscribe(self.cHandle);

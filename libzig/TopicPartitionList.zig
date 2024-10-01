@@ -25,7 +25,7 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 const zrdk = @import("zigrdkafka.zig");
 
-const defaultInitCapacity = 3;
+const defaultInitCapacity = 0;
 
 pub const UserSortCallback = *const fn (zrdk.TopicPartition, zrdk.TopicPartition) i32;
 

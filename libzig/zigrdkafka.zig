@@ -36,6 +36,7 @@ const msg = @import("Message.zig");
 const csmr = @import("Consumer.zig");
 const uuid = @import("Uuid.zig");
 const hndl = @import("Handle.zig");
+const pm = @import("PartitionMetadata.zig");
 
 pub const Handle = hndl.Handle;
 pub const ConfResult = cfg.ConfResult;
@@ -52,6 +53,8 @@ pub const LogLevel = cfg.LogLevel;
 pub const Producer = prd.Producer;
 pub const Consumer = csmr.Consumer;
 pub const Uuid = uuid.Uuid;
+pub const PartitionMetadata = pm.PartitionMetadata;
+pub const PartitionMetadataRespError = pm.PartitionMetadataRespError;
 pub const RD_KAFKA_PARTITION_UA = c.RD_KAFKA_PARTITION_UA;
 
 pub fn kafkaVersionStr() []const u8 {

@@ -30,7 +30,7 @@ pub const ConsumerResultError = error{
 };
 
 pub const Consumer = struct {
-    cClient: *c.rd_kafka_t,
+    cHandle: *c.rd_kafka_t,
     conf: zrdk.Conf,
 
     const Self = @This();
@@ -57,25 +57,25 @@ pub const Consumer = struct {
         _ = c.rd_kafka_poll_set_consumer(rk);
 
         return Self{
-            .cClient = rk.?,
+            .cHandle = rk.?,
             .conf = conf,
         };
     }
 
     pub fn deinit(self: Self) void {
         // Internally, rd_kafka_consumer_close will be called if this is called.
-        c.rd_kafka_destroy(self.cClient);
+        c.rd_kafka_destroy(self.cHandle);
     }
 
     pub fn Handle(self: Self) zrdk.Handle {
         return zrdk.Handle{
-            .cHandle = self.cClient,
+            .cHandle = self.cHandle,
         };
     }
 
     /// Retrieve the Consumer's broker assigned group Member ID.
     pub fn memberId(self: Self) []const u8 {
-        const res = c.rd_kafka_memberid(self.cClient);
+        const res = c.rd_kafka_memberid(self.cHandle);
         if (res == null) {
             return "<null>";
         }
@@ -91,12 +91,12 @@ pub const Consumer = struct {
     /// resources.
     pub fn close(self: Self) void {
         // TODO: handle return error.
-        _ = c.rd_kafka_consumer_close(self.cClient);
+        _ = c.rd_kafka_consumer_close(self.cHandle);
     }
 
     /// Check if the Consumer has been closed.
     pub fn closed(self: Self) bool {
-        return c.rd_kafka_consumer_closed(self.cClient) == 1;
+        return c.rd_kafka_consumer_closed(self.cHandle) == 1;
     }
 
     pub fn subscribe(self: Self, topics: []const [:0]const u8) void {
@@ -111,7 +111,7 @@ pub const Consumer = struct {
 
         // Subscribe to the list of topics.
         // TODO: handle error.
-        _ = c.rd_kafka_subscribe(self.cClient, topicSubs.Handle());
+        _ = c.rd_kafka_subscribe(self.cHandle, topicSubs.Handle());
 
         std.log.info(
             "Subscribed to {d} topic(s), waiting for rebalance and messages...",
@@ -121,7 +121,7 @@ pub const Consumer = struct {
 
     pub fn unsubscribe(self: Self) void {
         // TODO: handle and return error.
-        _ = c.rd_kafka_unsubscribe(self.cClient);
+        _ = c.rd_kafka_unsubscribe(self.cHandle);
     }
 
     /// Commit the set of offsets from the given TopicPartitionList.
@@ -133,7 +133,7 @@ pub const Consumer = struct {
     pub fn commit(self: Self, offsets: ?zrdk.TopicPartitionList, @"async": bool) void {
         // TODO: handle and return error.
         _ = c.rd_kafka_commit(
-            self.cClient,
+            self.cHandle,
             if (offsets != null) offsets.?.Handle() else null,
             @"async" == 1,
         );
@@ -143,7 +143,7 @@ pub const Consumer = struct {
     pub fn commitMessage(self: Self, msg: zrdk.Message, @"async": bool) void {
         // TODO: handle and return error.
         _ = c.rd_kafka_commit_message(
-            self.cClient,
+            self.cHandle,
             msg.Handle(),
             @"async" == 1,
         );
@@ -154,7 +154,7 @@ pub const Consumer = struct {
     /// Always ensure message !isEmpty() before inspecting it.
     pub fn poll(self: Self, milliseconds: u64) zrdk.Message {
         const rawMsg = c.rd_kafka_consumer_poll(
-            self.cClient,
+            self.cHandle,
             @intCast(milliseconds),
         );
         return zrdk.Message.wrap(rawMsg);

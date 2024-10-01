@@ -25,6 +25,7 @@ const zrk = @This();
 const std = @import("std");
 const c = @import("cdef.zig").cdef;
 
+const bm = @import("BrokerMetadata.zig");
 const cfg = @import("Conf.zig");
 const topCfg = @import("TopicConf.zig");
 const top = @import("Topic.zig");
@@ -39,6 +40,8 @@ const hndl = @import("Handle.zig");
 const pm = @import("PartitionMetadata.zig");
 
 pub const Handle = hndl.Handle;
+pub const BrokerMetadata = bm.BrokerMetadata;
+pub const BrokerMetadataRespError = bm.BrokerMetadataRespError;
 pub const ConfResult = cfg.ConfResult;
 pub const Conf = cfg.Conf;
 pub const Message = msg.Message;

@@ -181,14 +181,23 @@ pub const TopicPartitionList = struct {
         // 5. The entire purpose of this is so the end-user doesn't have to work with C-ABI and C librdafka directly.
         const cmp = struct {
             fn inner(a: ?*const anyopaque, b: ?*const anyopaque, cmpOpaque: ?*anyopaque) callconv(.C) c_int {
-                const left = @as(*c.rd_kafka_topic_partition_t, @constCast(@alignCast(@ptrCast(a.?))));
-                const right = @as(*c.rd_kafka_topic_partition_t, @constCast(@alignCast(@ptrCast(b.?))));
+                // Just a helper function to wrap up incoming items a and b.
+                const wrapper = struct {
+                    fn wrap(item: ?*const anyopaque) zrdk.TopicPartition {
+                        const itemCasted = @as(
+                            *c.rd_kafka_topic_partition_t,
+                            @constCast(@alignCast(@ptrCast(item.?))),
+                        );
 
-                const leftWrapped = zrdk.TopicPartition.wrap(left);
-                const rightWrapped = zrdk.TopicPartition.wrap(right);
+                        return zrdk.TopicPartition.wrap(itemCasted);
+                    }
+                };
 
-                const userCallback = @as(UserSortCallback, @alignCast(@ptrCast(cmpOpaque.?)));
-                const res = userCallback(leftWrapped, rightWrapped);
+                const userCallback = @as(
+                    UserSortCallback,
+                    @alignCast(@ptrCast(cmpOpaque.?)),
+                );
+                const res = userCallback(wrapper.wrap(a), wrapper.wrap(b));
                 return @intCast(res);
             }
         };

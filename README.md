@@ -6,6 +6,13 @@
 This is `librdkafka`, hijacked and under the command and control of Zig. 
 This project requires `Zig 0.13` and is developed currently on `macos-aarch64`.
 
+## Big Fat Caveat
+I am building this Zig-flavored wrapper to librdkafka organically and as a
+discovery project. Therefore, I'm skipping proper unit-testing for awhile as
+the API is likely to change drastically. Additionally, I havn't yet put a lot
+of thought into how I want to handle errors. Obviously, I will use Zig error-sets
+but I need to figure out how to best map the librdkafka C error codes to the error-sets.
+
 ## Sample Consumer
 ```zig
 const std = @import("std");

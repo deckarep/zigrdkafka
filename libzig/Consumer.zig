@@ -52,14 +52,16 @@ pub const Consumer = struct {
             return ConsumerResultError.Instantiation;
         }
 
-        // Redirect all messages from per-partition queues to the main queue.
-        // Perhaps make this a default setting.
-        _ = c.rd_kafka_poll_set_consumer(rk);
-
-        return Self{
+        const s = Self{
             .cHandle = rk.?,
             .conf = conf,
         };
+
+        // Redirect all messages from per-partition queues to the main queue.
+        // Perhaps make this a default setting.
+        s.pollSetConsumer();
+
+        return s;
     }
 
     pub fn deinit(self: Self) void {
@@ -118,6 +120,16 @@ pub const Consumer = struct {
         );
 
         std.log.info("res of getWatermarkOffsets => {d}", .{res});
+    }
+
+    /// Redirect the main event queue to the Consumer's queue so the consumer
+    /// doesn't need to poll from it separately for event callbacks to fire.
+    ///
+    /// NOTE: It is not permitted to call poll after redirecting the main queue
+    /// with pollSetConsumer.
+    pub inline fn pollSetConsumer(self: Self) void {
+        // TODO: handle and return an error if it has one.
+        _ = c.rd_kafka_poll_set_consumer(self.cHandle);
     }
 
     /// Close down the consumer. This will block until the consumer has revoked

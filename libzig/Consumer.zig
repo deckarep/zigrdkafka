@@ -106,7 +106,7 @@ pub const Consumer = struct {
     /// If there is no cached offset (either low or high, or both) then RD_KAFKA_OFFSET_INVALID
     /// will be returned for the respective offset.
     ///
-    /// NOTE: Offsets are returned in as fields in a anonymous struct instead of using pointer
+    /// NOTE: Offsets are returned as fields in an anonymous struct instead of using pointer
     /// out params as the original librdkafka c code does.
     ///
     /// Remarks: Shall only be used with an active consumer instance.

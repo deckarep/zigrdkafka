@@ -54,19 +54,20 @@ pub fn main() !void {
 ```
 
 ## Currently Implemented
+  - [ ] Proper error-handling (not started) ⚠️
   - [x] Conf + TopicConf ✅
   - [x] Uuid ✅
-  - [x] Topic (in-progress)
+  - [x] Topic ✅
   - [x] TopicPartition ✅
   - [x] TopicPartitionList (in-progress)
   - [x] Headers collection (in-progress)
   - [x] Message (in-progress)
-  - [x] Consumer (in-progress, but works!)
-  - [x] Producer (in-progress, but works!)
+  - [x] Raw Consumer (in-progress, but works!)
+  - [x] Raw Producer (in-progress, but works!)
   - [ ] Support for librdkafka callbacks (not-started)
   - [ ] Admin client (not-started)
-  - [ ] Proper error-handling (in-progress)
-  - [ ] etc. as there's a lot more to librdkafka than meets the eye.
+  - [ ] Variations on Consumers/Producers (such as high-level consumer) (not-started)
+  - [ ] etc. as there's a lot more to librdkafka than meets the eye just like Transformers!
 
 ## Warning
   * While both the Consumer and Producer work, some things are still hard-coded as this lib is

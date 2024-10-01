@@ -73,9 +73,21 @@ pub const Consumer = struct {
         };
     }
 
+    /// Close down the consumer. This will block until the consumer has revoked
+    /// its assignment(s), committed offsets, and left the consumer group. The
+    /// maximum blocking time is roughly limited to the `session.timeout.ms`
+    /// config option.
+    ///
+    /// Ensure that `deinit` is called after the Consumer is closed to free up
+    /// resources.
     pub fn close(self: Self) void {
         // TODO: handle return error.
         _ = c.rd_kafka_consumer_close(self.cClient);
+    }
+
+    /// Check if the Consumer has been closed.
+    pub fn closed(self: Self) bool {
+        return c.rd_kafka_consumer_closed(self.cClient) == 1;
     }
 
     pub fn subscribe(self: Self, topics: []const [:0]const u8) void {
@@ -98,10 +110,34 @@ pub const Consumer = struct {
         );
     }
 
-    // TODO: commitMessage is important yall.
-    pub fn commitMessage(self: Self, msg: zrdk.Message) void {
-        _ = self;
-        _ = msg;
+    pub fn unsubscribe(self: Self) void {
+        // TODO: handle and return error.
+        _ = c.rd_kafka_unsubscribe(self.cClient);
+    }
+
+    /// Commit the set of offsets from the given TopicPartitionList.
+    /// offsets is the set of topic+partition with offset (and maybe metadata) to
+    /// be commited. If offsets is nil the current partition assignment set will
+    /// be used instead.
+    /// If async is false this operation will block until the broker
+    /// offset commit is done.
+    pub fn commit(self: Self, offsets: ?zrdk.TopicPartitionList, @"async": bool) void {
+        // TODO: handle and return error.
+        _ = c.rd_kafka_commit(
+            self.cClient,
+            if (offsets != null) offsets.?.Handle() else null,
+            @"async" == 1,
+        );
+    }
+
+    /// Commit the message's offset on the broker for the message's partition.
+    pub fn commitMessage(self: Self, msg: zrdk.Message, @"async": bool) void {
+        // TODO: handle and return error.
+        _ = c.rd_kafka_commit_message(
+            self.cClient,
+            msg.Handle(),
+            @"async" == 1,
+        );
     }
 
     /// poll returns a wrapped message which the caller owns.

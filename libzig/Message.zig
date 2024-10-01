@@ -34,6 +34,10 @@ pub const Message = struct {
         return Self{ .cHandle = rawPtr };
     }
 
+    pub inline fn Handle(self: Self) ?*c.struct_rd_kafka_message_s {
+        return self.cHandle;
+    }
+
     pub fn deinit(self: Self) void {
         if (self.cHandle) |h| {
             c.rd_kafka_message_destroy(h);

@@ -78,8 +78,7 @@ pub const Consumer = struct {
     /// Remarks: This currently requires the high-level KafkaConsumer.
     ///
     /// Returns: An allocated string containing the current broker-assigned group member id
-    /// or NULL if not available. Depending on the allocator, you must remember to free the
-    /// string.
+    /// or NULL if not available. You must remember to free the string.
     pub fn memberId(self: Self, allocator: std.mem.Allocator) !?[]const u8 {
         const res = c.rd_kafka_memberid(self.cHandle);
         defer c.rd_kafka_mem_free(self.cHandle, res);

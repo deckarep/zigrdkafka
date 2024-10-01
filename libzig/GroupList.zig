@@ -35,7 +35,36 @@ pub const GroupList = struct {
         return Self{ .cHandle = rawPtr };
     }
 
-    // TODO: groups() getter.
+    /// groupAt simply returns a slice of zrdk.GroupInfo objects.
+    /// The lifetime of the zrdk.GroupInfo objects lives as long as this GroupList.
+    pub fn groups(self: Self, idx: usize) ?[]const zrdk.GroupInfo {
+        const cnt = self.count();
+
+        // If idx is in bounds.
+        if (idx <= cnt - 1) {
+            // Cast to a multiPtr.
+            const multiPtr = @as(
+                [*]const c.struct_rd_kafka_group_info,
+                @ptrCast(self.cHandle.groups),
+            );
+
+            // Iterate the multiPtr, and wrap the raw C GroupInfo struct.
+            // We always wrap to avoid returning raw C pointers.
+            var wrappedGroups: [cnt]zrdk.GroupInfo = undefined;
+            for (0..cnt - 1) |i| {
+                wrappedGroups[i] = zrdk.GrouInfo.wrap(multiPtr[i]);
+            }
+
+            // Return a normal Zig slice.
+            return wrappedGroups[0..cnt];
+        }
+
+        return null;
+    }
+
+    pub inline fn count(self: Self) usize {
+        return @intCast(self.cHandle.group_cnt);
+    }
 
     /// Release the resources used by the group list back to the system.
     pub inline fn destroy(self: Self) []const u8 {

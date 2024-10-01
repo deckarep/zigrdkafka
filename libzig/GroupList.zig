@@ -43,17 +43,18 @@ pub const GroupList = struct {
 
         // If at least one item exists...
         if (cnt >= 1) {
-            // Cast to a multiPtr.
-            const multiPtr = @as(
-                [*]const c.struct_rd_kafka_group_info,
-                @ptrCast(self.cHandle.groups),
-            );
+            // // Cast to a multiPtr.
+            // On second thought, multiPtr cast should not be necessary.
+            // const multiPtr = @as(
+            //     [*]const c.struct_rd_kafka_group_info,
+            //     @ptrCast(self.cHandle.groups),
+            // );
 
-            // Iterate the multiPtr, and wrap the raw C GroupInfo struct.
+            // Iterate the raw c pointer, and wrap the raw C GroupInfo struct.
             // We always wrap to avoid returning raw C pointers.
             var wrappedGroups: [cnt]zrdk.GroupInfo = undefined;
             for (0..cnt - 1) |i| {
-                wrappedGroups[i] = zrdk.GrouInfo.wrap(multiPtr[i]);
+                wrappedGroups[i] = zrdk.GrouInfo.wrap(self.cHandle.groups[i]);
             }
 
             // Return a normal Zig slice.

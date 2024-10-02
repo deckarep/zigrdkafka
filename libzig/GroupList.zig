@@ -35,30 +35,16 @@ pub const GroupList = struct {
         return Self{ .cHandle = rawPtr };
     }
 
-    /// groupAt simply returns a slice of zrdk.GroupInfo objects.
-    /// The lifetime of the zrdk.GroupInfo objects lives as long as this GroupList.
+    /// groupAt simply returns a zrdk.GroupInfo object located at idx.
+    /// The lifetime of the zrdk.GroupInfo object lives as long as this GroupList.
     /// Note: untested!
-    pub fn groups(self: Self) ?[]const zrdk.GroupInfo {
+    pub fn groupAt(self: Self, idx: usize) ?zrdk.GroupInfo {
         const cnt = self.count();
 
-        // If at least one item exists...
-        if (cnt >= 1) {
-            // // Cast to a multiPtr.
-            // On second thought, multiPtr cast should not be necessary.
-            // const multiPtr = @as(
-            //     [*]const c.struct_rd_kafka_group_info,
-            //     @ptrCast(self.cHandle.groups),
-            // );
-
-            // Iterate the raw c pointer, and wrap the raw C GroupInfo struct.
-            // We always wrap to avoid returning raw C pointers.
-            var wrappedGroups: [cnt]zrdk.GroupInfo = undefined;
-            for (0..cnt - 1) |i| {
-                wrappedGroups[i] = zrdk.GrouInfo.wrap(self.cHandle.groups[i]);
-            }
-
-            // Return a normal Zig slice.
-            return wrappedGroups[0..cnt];
+        // If the idx is within range...
+        if (idx <= (cnt - 1)) {
+            const item = &self.cHandle.groups[idx];
+            return zrdk.GroupInfo.wrap(item);
         }
 
         return null;

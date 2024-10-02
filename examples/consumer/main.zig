@@ -43,12 +43,9 @@ pub fn main() !void {
         try testUUID(a, b);
     }
 
-    const brokers = "localhost:9092";
-    const groupid = "zig-cli-consumer";
-
     const conf = try zrdk.Conf.init();
-    try conf.set("bootstrap.servers", brokers);
-    try conf.set("group.id", groupid);
+    try conf.set("bootstrap.servers", "localhost:9092");
+    try conf.set("group.id", "zig-cli-consumer");
     try conf.set("auto.offset.reset", "earliest");
 
     const consumer = try zrdk.Consumer.init(conf);

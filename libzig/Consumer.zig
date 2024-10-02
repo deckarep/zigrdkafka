@@ -174,6 +174,10 @@ pub const Consumer = struct {
         return c.rd_kafka_consumer_closed(self.cHandle) == 1;
     }
 
+    /// subscribe conveniently subscribes to the provided string topics
+    /// by creating taking care of creating the TopicPartitionList
+    /// and using an unassigned partition (-1) to let Kafka handle the
+    /// partition assignment internally.
     pub fn subscribe(self: Self, topics: []const [:0]const u8) void {
         // Convert list of topics to a format suitable for librdkafka.
         const topicSubs = zrdk.TopicPartitionList.initWithCapacity(topics.len);
@@ -184,6 +188,13 @@ pub const Consumer = struct {
             topicSubs.add(t, c.RD_KAFKA_PARTITION_UA);
         }
 
+        self.subscribeWithList(topicSubs);
+    }
+
+    /// subscribe subscribes to the provided TopicPartitionList of topics
+    /// and allows the caller to precisely define the mapping of topic
+    /// + subscriptions + partitions.
+    pub fn subscribeWithList(self: Self, topicSubs: zrdk.TopicPartitionList) void {
         // Subscribe to the list of topics.
         // TODO: handle error.
         _ = c.rd_kafka_subscribe(self.cHandle, topicSubs.Handle());

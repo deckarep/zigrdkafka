@@ -129,6 +129,7 @@ pub const Conf = struct {
         }
     }
 
+    /// Duplicate the current config.
     pub fn dup(self: Self) ConfResultError!Self {
         const res = c.rd_kafka_conf_dup(self.cHandle);
         if (res) |h| {
@@ -137,7 +138,22 @@ pub const Conf = struct {
         return ConfResultError.Instantiation;
     }
 
-    // TODO: dupFilter
+    /// Same as `dup` but with a slice of property name prefixes to filter out (ignore) when copying.
+    pub fn dupFilter(self: Self, filterPrefixes: []const [:0]const u8) ConfResultError!Self {
+        const prefixes = @as(
+            [*c][*c]const u8,
+            @ptrCast(@constCast(filterPrefixes)),
+        );
+        const res = c.rd_kafka_conf_dup_filter(
+            self.cHandle,
+            filterPrefixes.len,
+            prefixes,
+        );
+        if (res) |h| {
+            return Self{ .cHandle = h };
+        }
+        return ConfResultError.Instantiation;
+    }
 
     pub fn dump(self: Self) void {
         var cnt: usize = undefined;

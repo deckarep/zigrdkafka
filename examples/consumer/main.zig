@@ -44,6 +44,7 @@ pub fn main() !void {
     }
 
     const conf = try zrdk.Conf.init();
+    conf.setEvents(.{ .Delivery = true });
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");
     try conf.set("auto.offset.reset", "earliest");

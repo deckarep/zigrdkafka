@@ -47,6 +47,7 @@ pub const BrokerMetadata = bm.BrokerMetadata;
 pub const BrokerMetadataRespError = bm.BrokerMetadataRespError;
 pub const ConfResult = cfg.ConfResult;
 pub const Conf = cfg.Conf;
+pub const ConfEventFlags = cfg.EventFlags;
 pub const GroupInfo = gi.GroupInfo;
 pub const GroupList = gl.GroupList;
 pub const GroupMemberInfo = gmi.GroupMemberInfo;

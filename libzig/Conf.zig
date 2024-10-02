@@ -43,6 +43,22 @@ pub const ConfResultError = error{
     Unknown,
 };
 
+pub const EventFlags = packed struct(i32) {
+    None: bool = false, // 0x0
+    Delivery: bool = false, // 0x1
+    Fetch: bool = false, // 0x2
+    Log: bool = false, // 0x4
+    Error: bool = false, // 0x8
+    Rebalance: bool = false, // 0x10
+    OffsetCommit: bool = false, // 0x20
+    Stats: bool = false, // 0x40
+    _padding: u24 = 0,
+
+    pub inline fn C(self: EventFlags) c_int {
+        return @bitCast(self);
+    }
+};
+
 pub const Conf = struct {
     cHandle: *c.rd_kafka_conf_t,
 
@@ -127,6 +143,12 @@ pub const Conf = struct {
             },
             else => unreachable,
         }
+    }
+
+    /// Enable event sourcing. events is a bitmask of RD_KAFKA_EVENT_* of events to enable
+    /// for consumption by rd_kafka_queue_poll().
+    pub fn setEvents(self: Self, events: EventFlags) void {
+        c.rd_kafka_conf_set_events(self.cHandle, events.C());
     }
 
     /// Duplicate the current config.

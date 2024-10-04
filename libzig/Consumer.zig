@@ -75,6 +75,10 @@ pub const Consumer = struct {
         };
     }
 
+    pub fn getOpaque(self: Self) ?*anyopaque {
+        return c.rd_kafka_opaque(self.cHandle);
+    }
+
     /// Atomically assign the set of partitions to consume. This will replace the
     /// existing assignment.
     ///

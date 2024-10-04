@@ -28,13 +28,13 @@ const zrdk = @import("zigrdkafka.zig");
 pub const ConfLogCallback = *const fn (ptr: *anyopaque, i32, *const u8, *const u8) void;
 const ConfLogCallbackCABI = *const fn (?*const c.struct_rd_kafka_s, c_int, [*c]const u8, [*c]const u8) callconv(.C) void;
 
-/// Logger is any "interface" to anything that knows how to be a logger.
+/// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
-pub const Logger = struct {
+pub const CallbackHandler = struct {
     ptr: *anyopaque,
     logCallbackFn: ConfLogCallback,
 
-    fn logCallback(self: Logger, logLevel: i32, facility: *const u8, msg: *const u8) void {
+    fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
     }
 };
@@ -177,43 +177,25 @@ pub const Conf = struct {
     /// NOTE: The application MUST NOT call any librdkafka APIs or do any
     /// prolonged work in a log_cb unless logs have been forwarded to a queue
     /// via set_log_queue.
-    pub fn setLogCallback(self: Self, userLogger: *Logger) void {
-        // NOTE: this isn't quite correct as this call will keep overwriting the opaque
-        c.rd_kafka_conf_set_opaque(self.cHandle, userLogger);
-
+    pub fn registerForLogging(self: Self) void {
         const abi = struct {
             pub fn C(rk: ?*const c.struct_rd_kafka_s, level: c_int, facility: [*c]const u8, msg: [*c]const u8) callconv(.C) void {
-                const ul: *zrdk.Logger = @alignCast(@ptrCast(c.rd_kafka_opaque(rk)));
-                ul.logCallbackFn(ul.ptr, level, facility, msg);
+                if (c.rd_kafka_opaque(rk)) |h| {
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+
+                    // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
+                    handler.logCallbackFn(handler.ptr, level, facility, msg);
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForLogging.
+                    );
+                }
             }
         };
 
+        // NOTE: For this callback, librdkafka doesn't provide an extra opaque pointer, so trying to find a workaround.
         c.rd_kafka_conf_set_log_cb(self.cHandle, abi.C);
-
-        //userLogger.logCallbackFn(userLogger, : i32, : *const u8, : *const u8)
-        // const Closure = struct {
-        //     callback: ConfLogCallback,
-        //     const InnerSelf = @This();
-
-        //     pub fn bind(s: InnerSelf) ConfLogCallbackCABI {
-        //         const abi = struct {
-        //             fn C(rk: ?*const c.struct_rd_kafka_s, level: c_int, facility: [*c]const u8, msg: [*c]const u8) callconv(.C) void {
-        //                 _ = rk; // unused for now.
-
-        //                 s.callback(level, facility, msg);
-        //             }
-        //         };
-        //         return abi.C;
-        //     }
-
-        //     // STUCK HERE: and awaiting a solution from Ziggit.dev
-        //     // 1. the incoming rk parameter might allow me to call c.rd_kafka_get_opaque ...hmm
-        // };
-
-        // const clos = Closure{
-        //     .callback = callback,
-        // };
-
     }
 
     /// Duplicate the current config.

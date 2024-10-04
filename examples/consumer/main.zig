@@ -26,19 +26,20 @@ const zrdk = @import("zigrdkafka");
 
 // Somewhat based on the original raw C example: https://github.com/confluentinc/librdkafka/blob/master/examples/consumer.c
 
-const App = struct {
+const AppHandler = struct {
     logCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
-        const self: *App = @alignCast(@ptrCast(ptr));
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
         self.logCalls += 1;
         std.log.info("calls: {d}, level: {d}, fac: {s}, buf:{s}", .{ self.logCalls, level, fac, buf });
     }
 
-    pub fn logger(self: *App) zrdk.Logger {
+    pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
             .logCallbackFn = log,
+            // TODO: add more Fn here.
         };
     }
 };
@@ -47,9 +48,8 @@ pub fn main() !void {
     std.log.info("all your bases..blah, blah...", .{});
     std.log.info("kafka version => {s}", .{zrdk.kafkaVersionStr()});
 
-    var myApp = App{};
-    const logger = myApp.logger();
-    const loggerPtr = &logger;
+    var myApp = AppHandler{};
+    const handler = myApp.handler();
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -65,9 +65,9 @@ pub fn main() !void {
     }
 
     const conf = try zrdk.Conf.init();
-    conf.setOpaque(@constCast(&myApp));
+    conf.setOpaque(@constCast(&handler));
     conf.setEvents(.{ .Delivery = true });
-    conf.setLogCallback(@constCast(loggerPtr));
+    conf.registerForLogging();
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");
     try conf.set("auto.offset.reset", "earliest");

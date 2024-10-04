@@ -25,6 +25,9 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 const zrdk = @import("zigrdkafka.zig");
 
+pub const ConfConsumeCallback = *const fn (ptr: *anyopaque, zrdk.Message, ?*anyopaque) void;
+const ConfConsumeCallbackCABI = ?*const fn ([*c]c.rd_kafka_message_t, ?*anyopaque) callconv(.C) void;
+
 pub const ConfLogCallback = *const fn (ptr: *anyopaque, i32, *const u8, *const u8) void;
 const ConfLogCallbackCABI = *const fn (?*const c.struct_rd_kafka_s, c_int, [*c]const u8, [*c]const u8) callconv(.C) void;
 
@@ -33,9 +36,14 @@ const ConfLogCallbackCABI = *const fn (?*const c.struct_rd_kafka_s, c_int, [*c]c
 pub const CallbackHandler = struct {
     ptr: *anyopaque,
     logCallbackFn: ConfLogCallback,
+    consumeCallbackFn: ConfConsumeCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
+    }
+
+    fn consumeCallback(self: CallbackHandler, msg: zrdk.Message, @"opaque": ?*anyopaque) void {
+        return self.consumeCallback(self.ptr, msg, @"opaque");
     }
 };
 
@@ -181,6 +189,7 @@ pub const Conf = struct {
         const abi = struct {
             pub fn C(rk: ?*const c.struct_rd_kafka_s, level: c_int, facility: [*c]const u8, msg: [*c]const u8) callconv(.C) void {
                 if (c.rd_kafka_opaque(rk)) |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
                     const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
 
                     // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
@@ -196,6 +205,30 @@ pub const Conf = struct {
 
         // NOTE: For this callback, librdkafka doesn't provide an extra opaque pointer, so trying to find a workaround.
         c.rd_kafka_conf_set_log_cb(self.cHandle, abi.C);
+    }
+
+    pub fn registerForConsuming(self: Self) void {
+        const abi = struct {
+            pub fn C(msg: [*c]c.rd_kafka_message_t, @"opaque": ?*anyopaque) callconv(.C) void {
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+
+                    // Wrap msg.
+                    const wrappedMsg = zrdk.Message.wrap(msg);
+
+                    // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
+                    handler.consumeCallbackFn(handler.ptr, wrappedMsg, @"opaque");
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForConsuming.
+                    );
+                }
+            }
+        };
+
+        c.rd_kafka_conf_set_consume_cb(self.cHandle, abi.C);
     }
 
     /// Duplicate the current config.

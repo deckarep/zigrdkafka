@@ -28,18 +28,26 @@ const zrdk = @import("zigrdkafka");
 
 const AppHandler = struct {
     logCalls: usize = 0,
+    consumeCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
         self.logCalls += 1;
-        std.log.info("calls: {d}, level: {d}, fac: {s}, buf:{s}", .{ self.logCalls, level, fac, buf });
+        std.log.info("log calls: {d}, level: {d}, fac: {s}, buf:{s}", .{ self.logCalls, level, fac, buf });
+    }
+
+    fn consume(ptr: *anyopaque, msg: zrdk.Message, @"opaque": ?*anyopaque) void {
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        _ = @"opaque"; // I don't think this callback api needs to provide opaque behavior, for any of the callbacks.
+        self.consumeCalls += 1;
+        std.log.info("consume calls: {d}, topic: {s}", .{ self.consumeCalls, msg.topic().name() });
     }
 
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
             .logCallbackFn = log,
-            // TODO: add more Fn here.
+            .consumeCallbackFn = consume,
         };
     }
 };
@@ -67,7 +75,8 @@ pub fn main() !void {
     const conf = try zrdk.Conf.init();
     conf.setOpaque(@constCast(&handler));
     conf.setEvents(.{ .Delivery = true });
-    conf.registerForLogging();
+    conf.registerForLogging(); // Enable logger callbacks.
+    conf.registerForConsuming(); // Enable consumer callbacks.
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");
     try conf.set("auto.offset.reset", "earliest");

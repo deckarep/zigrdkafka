@@ -44,11 +44,12 @@ const AppHandler = struct {
         std.log.info("consume calls: {d}, topic: {s}", .{ self.consumeCalls, msg.topic().name() });
     }
 
-    fn rebalance(ptr: *anyopaque, topicPartitionList: zrdk.TopicPartitionList) void {
+    fn rebalance(ptr: *anyopaque, err: i32, topicPartitionList: zrdk.TopicPartitionList) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
         self.rebalanceCalls += 1;
-        std.log.info("rebalance calls: {d}, topicPartitionList: {?}", .{
+        std.log.info("rebalance calls: {d}, err:{d}, topicPartitionList: {?}", .{
             self.rebalanceCalls,
+            err,
             topicPartitionList,
         });
     }

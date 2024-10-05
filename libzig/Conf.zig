@@ -31,8 +31,8 @@ const ConfConsumeCallbackCABI = ?*const fn ([*c]c.rd_kafka_message_t, ?*anyopaqu
 pub const ConfLogCallback = *const fn (ptr: *anyopaque, i32, *const u8, *const u8) void;
 const ConfLogCallbackCABI = *const fn (?*const c.struct_rd_kafka_s, c_int, [*c]const u8, [*c]const u8) callconv(.C) void;
 
-// TODO: The Zig/RebalanceCallback needs to wrap the error type, (currently i'm not passing it through!)
-pub const ConfRebalanceCallback = ?*const fn (ptr: *anyopaque, zrdk.TopicPartitionList) void;
+// TODO: The Zig/RebalanceCallback needs to send a proper error, not this i32 crap!!!
+pub const ConfRebalanceCallback = ?*const fn (ptr: *anyopaque, err: i32, zrdk.TopicPartitionList) void;
 const ConfRebalanceCallbackCABI = ?*const fn (
     ?*c.rd_kafka_t,
     c.rd_kafka_resp_err_t,
@@ -254,7 +254,6 @@ pub const Conf = struct {
                 @"opaque": ?*anyopaque,
             ) callconv(.C) void {
                 _ = rk;
-                _ = err; // TODO: supply this error, must be wrapped!
                 if (@"opaque") |h| {
                     // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
                     const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
@@ -265,7 +264,7 @@ pub const Conf = struct {
                     if (handler.rebalanceCallbackFn) |cb| {
                         // Wrap TopicPartitionList.
                         const wrappedTPL = zrdk.TopicPartitionList.wrap(tpl);
-                        cb(handler.ptr, wrappedTPL);
+                        cb(handler.ptr, err, wrappedTPL);
                     }
                 } else {
                     @panic(

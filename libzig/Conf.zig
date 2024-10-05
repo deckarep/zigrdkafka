@@ -44,6 +44,14 @@ const ConfRebalanceCallbackCABI = ?*const fn (
 pub const ConfOffsetCommitsCallback = ConfRebalanceCallback;
 const ConfOffsetCommitsCallbackCABI = ConfRebalanceCallbackCABI;
 
+pub const ConfStatsCallback = ?*const fn (ptr: *anyopaque, json: []const u8) void;
+const ConfStatsCallbackCABI = ?*const fn (
+    rk: ?*c.rd_kafka_t,
+    json: [*c]u8,
+    jsonLen: usize,
+    @"opaque": ?*anyopaque,
+) callconv(.C) c_int;
+
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
 pub const CallbackHandler = struct {
@@ -52,6 +60,7 @@ pub const CallbackHandler = struct {
     consumeCallbackFn: ConfConsumeCallback,
     rebalanceCallbackFn: ConfRebalanceCallback,
     offsetCommitsCallbackFn: ConfOffsetCommitsCallback,
+    statsCallbackFn: ConfStatsCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -67,6 +76,10 @@ pub const CallbackHandler = struct {
 
     fn offsetCommitsCallback(self: CallbackHandler, err: c.rd_kafka_resp_err_t, topicPartitionList: zrdk.TopicPartitionList) void {
         return self.offsetCommitsCallback(self.ptr, err, topicPartitionList);
+    }
+
+    fn statsCallback(self: CallbackHandler, json: []const u8) void {
+        return self.statsCallback(self.ptr, json);
     }
 };
 
@@ -309,7 +322,6 @@ pub const Conf = struct {
                     const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
 
                     // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
-                    // TODO: this callback is missing the error (2nd param)
                     // NOTE: If callback is null, don't invoke it.
                     if (handler.offsetCommitsCallbackFn) |cb| {
                         // Wrap TopicPartitionList.
@@ -325,6 +337,51 @@ pub const Conf = struct {
             }
         };
         c.rd_kafka_conf_set_offset_commit_cb(self.cHandle, abi.C);
+    }
+
+    /// Enables statistics callback in provided conf object.
+    /// The statistics callback is triggered from rd_kafka_poll() every statistics.interval.ms
+    /// (needs to be configured separately).
+    ///
+    /// For more information on the format of json, see https://github.com/confluentinc/librdkafka/wiki/Statistics
+    pub fn registerForStats(self: Self) void {
+        const abi = struct {
+            pub fn C(
+                rk: ?*c.rd_kafka_t,
+                json: [*c]u8,
+                jsonLen: usize,
+                @"opaque": ?*anyopaque,
+            ) callconv(.C) c_int {
+                _ = rk;
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+
+                    // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
+                    // NOTE: If callback is null, don't invoke it.
+                    if (handler.statsCallbackFn) |cb| {
+                        // Send as a proper Zig string.
+                        const mp: [*]const u8 = json;
+                        const jsonStr = mp[0..jsonLen];
+                        cb(handler.ptr, jsonStr);
+                    }
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForConsuming.
+                    );
+                }
+
+                // If the application wishes to hold on to the json pointer and free it at a later time
+                // it must return 1 from the stats_cb. If the application returns 0 from the stats_cb then
+                // librdkafka will immediately free the json pointer.
+                //
+                // NOTE: for now, we will return 0 and expect end-users to take ownership if they want to
+                // keep it around.
+                return 0;
+            }
+        };
+        c.rd_kafka_conf_set_stats_cb(self.cHandle, abi.C);
     }
 
     /// Duplicate the current config.

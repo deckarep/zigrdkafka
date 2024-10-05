@@ -31,6 +31,7 @@ const AppHandler = struct {
     consumeCalls: usize = 0,
     rebalanceCalls: usize = 0,
     offsetCommitCalls: usize = 0,
+    statsCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
@@ -65,6 +66,16 @@ const AppHandler = struct {
         });
     }
 
+    fn stats(ptr: *anyopaque, json: []const u8) void {
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        self.statsCalls += 1;
+
+        std.log.info("stats calls: {d}, json: {s}", .{
+            self.statsCalls,
+            json,
+        });
+    }
+
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
@@ -72,6 +83,7 @@ const AppHandler = struct {
             .consumeCallbackFn = consume,
             .rebalanceCallbackFn = rebalance,
             .offsetCommitsCallbackFn = offsetCommits,
+            .statsCallbackFn = stats,
         };
     }
 };
@@ -101,10 +113,13 @@ pub fn main() !void {
 
     // These lines below register for the respective callbacks to fire.
     conf.setOpaque(@constCast(&handler));
+
+    // TODO: these is verbose, just use a single function with flags probably.
     conf.registerForLogging();
     conf.registerForConsuming();
     conf.registerForRebalance();
     conf.registerForOffsetCommits();
+    conf.registerForStats();
 
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");

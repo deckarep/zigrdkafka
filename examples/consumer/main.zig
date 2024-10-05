@@ -30,6 +30,7 @@ const AppHandler = struct {
     logCalls: usize = 0,
     consumeCalls: usize = 0,
     rebalanceCalls: usize = 0,
+    offsetCommitCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
@@ -54,12 +55,23 @@ const AppHandler = struct {
         });
     }
 
+    fn offsetCommits(ptr: *anyopaque, err: i32, topicPartitionList: zrdk.TopicPartitionList) void {
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        self.offsetCommitCalls += 1;
+        std.log.info("offset commit calls: {d}, err:{d}, topicPartitionList: {?}", .{
+            self.offsetCommitCalls,
+            err,
+            topicPartitionList,
+        });
+    }
+
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
             .logCallbackFn = log,
             .consumeCallbackFn = consume,
             .rebalanceCallbackFn = rebalance,
+            .offsetCommitsCallbackFn = offsetCommits,
         };
     }
 };
@@ -85,11 +97,15 @@ pub fn main() !void {
     }
 
     const conf = try zrdk.Conf.init();
-    conf.setOpaque(@constCast(&handler));
     conf.setEvents(.{ .Delivery = true });
-    conf.registerForLogging(); // Enable logger callbacks.
-    conf.registerForConsuming(); // Enable consumer callbacks.
-    conf.registerForRebalance(); // Enable rebalance callbacks.
+
+    // These lines below register for the respective callbacks to fire.
+    conf.setOpaque(@constCast(&handler));
+    conf.registerForLogging();
+    conf.registerForConsuming();
+    conf.registerForRebalance();
+    conf.registerForOffsetCommits();
+
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");
     try conf.set("auto.offset.reset", "earliest");

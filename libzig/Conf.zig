@@ -40,6 +40,10 @@ const ConfRebalanceCallbackCABI = ?*const fn (
     ?*anyopaque,
 ) callconv(.C) void;
 
+// NOTE: OffsetCommits callback is a fully identifical callback api to the rebalance api.
+pub const ConfOffsetCommitsCallback = ConfRebalanceCallback;
+const ConfOffsetCommitsCallbackCABI = ConfRebalanceCallbackCABI;
+
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
 pub const CallbackHandler = struct {
@@ -47,6 +51,7 @@ pub const CallbackHandler = struct {
     logCallbackFn: ConfLogCallback,
     consumeCallbackFn: ConfConsumeCallback,
     rebalanceCallbackFn: ConfRebalanceCallback,
+    offsetCommitsCallbackFn: ConfOffsetCommitsCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -58,6 +63,10 @@ pub const CallbackHandler = struct {
 
     fn rebalanceCallback(self: CallbackHandler, err: c.rd_kafka_resp_err_t, topicPartitionList: zrdk.TopicPartitionList) void {
         return self.rebalanceCallback(self.ptr, err, topicPartitionList);
+    }
+
+    fn offsetCommitsCallback(self: CallbackHandler, err: c.rd_kafka_resp_err_t, topicPartitionList: zrdk.TopicPartitionList) void {
+        return self.offsetCommitsCallback(self.ptr, err, topicPartitionList);
     }
 };
 
@@ -280,6 +289,38 @@ pub const Conf = struct {
         };
 
         c.rd_kafka_conf_set_rebalance_cb(self.cHandle, abi.C);
+    }
+
+    pub fn registerForOffsetCommits(self: Self) void {
+        const abi = struct {
+            pub fn C(
+                rk: ?*c.rd_kafka_t,
+                err: c.rd_kafka_resp_err_t,
+                tpl: [*c]c.rd_kafka_topic_partition_list_t,
+                @"opaque": ?*anyopaque,
+            ) callconv(.C) void {
+                _ = rk;
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+
+                    // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
+                    // TODO: this callback is missing the error (2nd param)
+                    // NOTE: If callback is null, don't invoke it.
+                    if (handler.offsetCommitsCallbackFn) |cb| {
+                        // Wrap TopicPartitionList.
+                        const wrappedTPL = zrdk.TopicPartitionList.wrap(tpl);
+                        cb(handler.ptr, err, wrappedTPL);
+                    }
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForConsuming.
+                    );
+                }
+            }
+        };
+        c.rd_kafka_conf_set_offset_commit_cb(self.cHandle, abi.C);
     }
 
     /// Duplicate the current config.

@@ -25,10 +25,10 @@ const std = @import("std");
 const c = @import("cdef.zig").cdef;
 const zrdk = @import("zigrdkafka.zig");
 
-pub const ConfConsumeCallback = *const fn (ptr: *anyopaque, zrdk.Message, ?*anyopaque) void;
+pub const ConfConsumeCallback = ?*const fn (ptr: *anyopaque, zrdk.Message, ?*anyopaque) void;
 const ConfConsumeCallbackCABI = ?*const fn ([*c]c.rd_kafka_message_t, ?*anyopaque) callconv(.C) void;
 
-pub const ConfLogCallback = *const fn (ptr: *anyopaque, i32, *const u8, *const u8) void;
+pub const ConfLogCallback = ?*const fn (ptr: *anyopaque, i32, *const u8, *const u8) void;
 const ConfLogCallbackCABI = *const fn (?*const c.struct_rd_kafka_s, c_int, [*c]const u8, [*c]const u8) callconv(.C) void;
 
 // TODO: The Zig/RebalanceCallback needs to send a proper error, not this i32 crap!!!
@@ -207,7 +207,9 @@ pub const Conf = struct {
                     const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
 
                     // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
-                    handler.logCallbackFn(handler.ptr, level, facility, msg);
+                    if (handler.logCallbackFn) |cb| {
+                        cb(handler.ptr, level, facility, msg);
+                    }
                 } else {
                     @panic(
                         \\The opaque is not set on either the Consumer or Producer. 
@@ -232,7 +234,9 @@ pub const Conf = struct {
                     const wrappedMsg = zrdk.Message.wrap(msg);
 
                     // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
-                    handler.consumeCallbackFn(handler.ptr, wrappedMsg, @"opaque");
+                    if (handler.consumeCallbackFn) |cb| {
+                        cb(handler.ptr, wrappedMsg, @"opaque");
+                    }
                 } else {
                     @panic(
                         \\The opaque is not set on either the Consumer or Producer. 

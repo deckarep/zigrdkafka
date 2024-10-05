@@ -291,6 +291,10 @@ pub const Conf = struct {
         c.rd_kafka_conf_set_rebalance_cb(self.cHandle, abi.C);
     }
 
+    /// Enables the offset commit callback which is called when offsets are committed by
+    /// the consumer.
+    ///
+    /// NOTE: Consumer only
     pub fn registerForOffsetCommits(self: Self) void {
         const abi = struct {
             pub fn C(

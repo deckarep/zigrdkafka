@@ -31,12 +31,22 @@ const ConfConsumeCallbackCABI = ?*const fn ([*c]c.rd_kafka_message_t, ?*anyopaqu
 pub const ConfLogCallback = *const fn (ptr: *anyopaque, i32, *const u8, *const u8) void;
 const ConfLogCallbackCABI = *const fn (?*const c.struct_rd_kafka_s, c_int, [*c]const u8, [*c]const u8) callconv(.C) void;
 
+// TODO: The Zig/RebalanceCallback needs to wrap the error type, (currently i'm not passing it through!)
+pub const ConfRebalanceCallback = ?*const fn (ptr: *anyopaque, zrdk.TopicPartitionList) void;
+const ConfRebalanceCallbackCABI = ?*const fn (
+    ?*c.rd_kafka_t,
+    c.rd_kafka_resp_err_t,
+    [*c]c.rd_kafka_topic_partition_list_t,
+    ?*anyopaque,
+) callconv(.C) void;
+
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
 pub const CallbackHandler = struct {
     ptr: *anyopaque,
     logCallbackFn: ConfLogCallback,
     consumeCallbackFn: ConfConsumeCallback,
+    rebalanceCallbackFn: ConfRebalanceCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -44,6 +54,10 @@ pub const CallbackHandler = struct {
 
     fn consumeCallback(self: CallbackHandler, msg: zrdk.Message, @"opaque": ?*anyopaque) void {
         return self.consumeCallback(self.ptr, msg, @"opaque");
+    }
+
+    fn rebalanceCallback(self: CallbackHandler, err: c.rd_kafka_resp_err_t, topicPartitionList: zrdk.TopicPartitionList) void {
+        return self.rebalanceCallback(self.ptr, err, topicPartitionList);
     }
 };
 
@@ -229,6 +243,40 @@ pub const Conf = struct {
         };
 
         c.rd_kafka_conf_set_consume_cb(self.cHandle, abi.C);
+    }
+
+    pub fn registerForRebalance(self: Self) void {
+        const abi = struct {
+            pub fn C(
+                rk: ?*c.rd_kafka_t,
+                err: c.rd_kafka_resp_err_t,
+                tpl: [*c]c.rd_kafka_topic_partition_list_t,
+                @"opaque": ?*anyopaque,
+            ) callconv(.C) void {
+                _ = rk;
+                _ = err; // TODO: supply this error, must be wrapped!
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+
+                    // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
+                    // TODO: this callback is missing the error (2nd param)
+                    // NOTE: If callback is null, don't invoke it.
+                    if (handler.rebalanceCallbackFn) |cb| {
+                        // Wrap TopicPartitionList.
+                        const wrappedTPL = zrdk.TopicPartitionList.wrap(tpl);
+                        cb(handler.ptr, wrappedTPL);
+                    }
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForConsuming.
+                    );
+                }
+            }
+        };
+
+        c.rd_kafka_conf_set_rebalance_cb(self.cHandle, abi.C);
     }
 
     /// Duplicate the current config.

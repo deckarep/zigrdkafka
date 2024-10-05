@@ -39,6 +39,10 @@ pub const TopicPartitionList = struct {
         return Self.initWithCapacity(defaultInitCapacity);
     }
 
+    pub fn wrap(cPtr: *c.rd_kafka_topic_partition_list_t) Self {
+        return .{ .cHandle = cPtr };
+    }
+
     /// initWithCapacity should be used when you know the capacity up front
     /// to reduce unecessary allocations.
     pub fn initWithCapacity(capacity: usize) Self {

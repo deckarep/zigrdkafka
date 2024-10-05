@@ -49,6 +49,7 @@ pub const ConfResult = cfg.ConfResult;
 pub const Conf = cfg.Conf;
 pub const CallbackHandler = cfg.CallbackHandler;
 pub const ConfLogCallback = cfg.ConfLogCallback;
+pub const ConfRebalanceCallback = cfg.ConfRebalanceCallback;
 pub const ConfEventFlags = cfg.EventFlags;
 pub const GroupInfo = gi.GroupInfo;
 pub const GroupList = gl.GroupList;

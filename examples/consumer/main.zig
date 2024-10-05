@@ -29,6 +29,7 @@ const zrdk = @import("zigrdkafka");
 const AppHandler = struct {
     logCalls: usize = 0,
     consumeCalls: usize = 0,
+    rebalanceCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
@@ -43,11 +44,21 @@ const AppHandler = struct {
         std.log.info("consume calls: {d}, topic: {s}", .{ self.consumeCalls, msg.topic().name() });
     }
 
+    fn rebalance(ptr: *anyopaque, topicPartitionList: zrdk.TopicPartitionList) void {
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        self.rebalanceCalls += 1;
+        std.log.info("rebalance calls: {d}, topicPartitionList: {?}", .{
+            self.rebalanceCalls,
+            topicPartitionList,
+        });
+    }
+
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
             .logCallbackFn = log,
             .consumeCallbackFn = consume,
+            .rebalanceCallbackFn = rebalance,
         };
     }
 };
@@ -77,6 +88,7 @@ pub fn main() !void {
     conf.setEvents(.{ .Delivery = true });
     conf.registerForLogging(); // Enable logger callbacks.
     conf.registerForConsuming(); // Enable consumer callbacks.
+    conf.registerForRebalance(); // Enable rebalance callbacks.
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");
     try conf.set("auto.offset.reset", "earliest");

@@ -31,13 +31,13 @@ pub const TopicResultError = error{
 };
 
 /// Somewhat based on this: https://github.com/deadmanssnitch/kafka/blob/4e61b272e91d9a98f9eb97cf044ab3064e57712a/lib/kafka/ffi/event.rb
-pub const Topic = struct {
+pub const Event = struct {
     cHandle: *c.rd_kafka_event_t,
 
     const Self = @This();
 
     pub fn wrap(cPtr: *c.rd_kafka_event_t) Self {
-        return Self{ .cHandle = cPtr };
+        return .{ .cHandle = cPtr };
     }
 
     pub fn deinit(self: Self) void {

@@ -33,6 +33,7 @@ const AppHandler = struct {
     offsetCommitCalls: usize = 0,
     statsCalls: usize = 0,
     deliveryReportMessageCalls: usize = 0,
+    backgroundEventCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
@@ -87,6 +88,16 @@ const AppHandler = struct {
         });
     }
 
+    fn backgroundEvent(ptr: *anyopaque, evt: zrdk.Event) void {
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        self.backgroundEventCalls += 1;
+
+        std.log.info("backgroundEvent calls: {d}, msg: {s}", .{
+            self.backgroundEventCalls,
+            evt.name(),
+        });
+    }
+
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
@@ -96,6 +107,7 @@ const AppHandler = struct {
             .offsetCommitsCallbackFn = offsetCommits,
             .statsCallbackFn = stats,
             .deliveryReportMessageCallbackFn = deliveryReportMessage,
+            .backgroundEventCallbackFn = backgroundEvent,
         };
     }
 };
@@ -133,6 +145,7 @@ pub fn main() !void {
     conf.registerForOffsetCommits();
     conf.registerForStats();
     conf.registerForDeliveryReportMessage();
+    conf.registerForBackgroundEvent();
 
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");

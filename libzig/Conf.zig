@@ -59,6 +59,13 @@ const ConfDeliveryReportMessageCallbackCABI = ?*const fn (
     @"opaque": ?*anyopaque,
 ) callconv(.C) void;
 
+pub const ConfBackgroundEventCallback = ?*const fn (ptr: *anyopaque, event: zrdk.Event) void;
+const ConfBackgroundEventCallbackCABI = ?*const fn (
+    rk: ?*c.rd_kafka_t,
+    rkmessage: ?*c.rd_kafka_event_t,
+    @"opaque": ?*anyopaque,
+) callconv(.C) void;
+
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
 pub const CallbackHandler = struct {
@@ -70,6 +77,7 @@ pub const CallbackHandler = struct {
     offsetCommitsCallbackFn: ConfOffsetCommitsCallback,
     statsCallbackFn: ConfStatsCallback,
     deliveryReportMessageCallbackFn: ConfDeliveryReportMessageCallback,
+    backgroundEventCallbackFn: ConfBackgroundEventCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -93,6 +101,10 @@ pub const CallbackHandler = struct {
 
     fn deliveryReportMessageCallback(self: CallbackHandler, msg: zrdk.Message) void {
         return self.deliveryReportMessageCallback(self.ptr, msg);
+    }
+
+    fn backgroundEventCallback(self: CallbackHandler, evt: zrdk.Event) void {
+        return self.backgroundEventCallback(self.ptr, evt);
     }
 };
 
@@ -427,6 +439,45 @@ pub const Conf = struct {
             }
         };
         c.rd_kafka_conf_set_stats_cb(self.cHandle, abi.C);
+    }
+
+    /// Set the callback that will be used for events published to the background
+    /// queue. This enables a background thread that runs internal to librdkafka
+    /// and can be used as a standard receiver for APIs that take a queue.
+    ///
+    /// @see Client#get_background_queue
+    ///
+    /// @note The application is responsible for calling #destroy on the event.
+    /// @note The application must not call #destroy on the Client inside the
+    /// callback.
+    pub fn registerForBackgroundEvent(self: Self) void {
+        const abi = struct {
+            pub fn C(
+                rk: ?*c.rd_kafka_t,
+                event: ?*c.rd_kafka_event_t,
+                @"opaque": ?*anyopaque,
+            ) callconv(.C) void {
+                _ = rk;
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+
+                    // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.
+                    // NOTE: If callback is null, don't invoke it.
+                    if (handler.backgroundEventCallbackFn) |cb| {
+                        // Send as a proper Zig types only!.
+                        const wrappedEvent = zrdk.Event.wrap(event.?);
+                        cb(handler.ptr, wrappedEvent);
+                    }
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForConsuming.
+                    );
+                }
+            }
+        };
+        c.rd_kafka_conf_set_background_event_cb(self.cHandle, abi.C);
     }
 
     /// Duplicate the current config.

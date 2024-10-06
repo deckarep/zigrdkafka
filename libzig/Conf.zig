@@ -66,6 +66,8 @@ const ConfBackgroundEventCallbackCABI = ?*const fn (
     @"opaque": ?*anyopaque,
 ) callconv(.C) void;
 
+pub const ConfThrottleCallback = ?*const fn (ptr: *anyopaque, brokerName: []const u8, brokerID: i32, throttleMS: i32) void;
+
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
 pub const CallbackHandler = struct {
@@ -78,6 +80,7 @@ pub const CallbackHandler = struct {
     statsCallbackFn: ConfStatsCallback,
     deliveryReportMessageCallbackFn: ConfDeliveryReportMessageCallback,
     backgroundEventCallbackFn: ConfBackgroundEventCallback,
+    throttleCallbackFn: ConfThrottleCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -105,6 +108,10 @@ pub const CallbackHandler = struct {
 
     fn backgroundEventCallback(self: CallbackHandler, evt: zrdk.Event) void {
         return self.backgroundEventCallback(self.ptr, evt);
+    }
+
+    fn throttleCallback(self: CallbackHandler, brokerName: []const u8, brokerID: i32, throttleMS: i32) void {
+        return self.throttleCallback(self.ptr, brokerName, brokerID, throttleMS);
     }
 };
 
@@ -270,6 +277,37 @@ pub const Conf = struct {
             }
         };
         c.rd_kafka_conf_set_dr_msg_cb(self.cHandle, abi.C);
+    }
+
+    pub fn registerForThrottle(self: Self) void {
+        const abi = struct {
+            pub fn C(
+                rk: ?*c.rd_kafka_t,
+                brokerName: [*c]const u8,
+                brokerID: i32,
+                throttleMS: c_int,
+                @"opaque": ?*anyopaque,
+            ) callconv(.C) void {
+                _ = rk;
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+
+                    // The callback is optional.
+                    if (handler.throttleCallbackFn) |cb| {
+                        const bn = std.mem.span(brokerName);
+                        const tms: i32 = @intCast(throttleMS);
+                        cb(handler.ptr, bn, brokerID, tms);
+                    }
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForConsuming.
+                    );
+                }
+            }
+        };
+        c.rd_kafka_conf_set_throttle_cb(self.cHandle, abi.C);
     }
 
     /// Set the logging callback. By default librdkafka will print to stderr (or

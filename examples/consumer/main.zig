@@ -34,6 +34,7 @@ const AppHandler = struct {
     statsCalls: usize = 0,
     deliveryReportMessageCalls: usize = 0,
     backgroundEventCalls: usize = 0,
+    throttleCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
@@ -98,6 +99,18 @@ const AppHandler = struct {
         });
     }
 
+    fn throttle(ptr: *anyopaque, brokerName: []const u8, brokerID: i32, throttleMS: i32) void {
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        self.throttleCalls += 1;
+
+        std.log.info("throttle calls: {d}, brokerName: {s}, brokerID: {d}, throttleMS: {d}", .{
+            self.throttleCalls,
+            brokerName,
+            brokerID,
+            throttleMS,
+        });
+    }
+
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
@@ -108,6 +121,7 @@ const AppHandler = struct {
             .statsCallbackFn = stats,
             .deliveryReportMessageCallbackFn = deliveryReportMessage,
             .backgroundEventCallbackFn = backgroundEvent,
+            .throttleCallbackFn = throttle,
         };
     }
 };
@@ -146,6 +160,7 @@ pub fn main() !void {
     conf.registerForStats();
     conf.registerForDeliveryReportMessage();
     conf.registerForBackgroundEvent();
+    conf.registerForThrottle();
 
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");

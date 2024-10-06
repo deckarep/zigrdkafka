@@ -67,6 +67,7 @@ const ConfBackgroundEventCallbackCABI = ?*const fn (
 ) callconv(.C) void;
 
 pub const ConfThrottleCallback = ?*const fn (ptr: *anyopaque, brokerName: []const u8, brokerID: i32, throttleMS: i32) void;
+pub const ConfSocketCallback = ?*const fn (ptr: *anyopaque, domain: i32, @"type": i32, protocol: i32) i32;
 
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
@@ -81,6 +82,7 @@ pub const CallbackHandler = struct {
     deliveryReportMessageCallbackFn: ConfDeliveryReportMessageCallback,
     backgroundEventCallbackFn: ConfBackgroundEventCallback,
     throttleCallbackFn: ConfThrottleCallback,
+    socketCallbackFn: ConfSocketCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -112,6 +114,10 @@ pub const CallbackHandler = struct {
 
     fn throttleCallback(self: CallbackHandler, brokerName: []const u8, brokerID: i32, throttleMS: i32) void {
         return self.throttleCallback(self.ptr, brokerName, brokerID, throttleMS);
+    }
+
+    fn socketCallback(self: CallbackHandler, domain: i32, @"type": i32, protocol: i32) c_int {
+        return self.socketCallback(self.ptr, domain, @"type", protocol);
     }
 };
 
@@ -517,6 +523,51 @@ pub const Conf = struct {
         };
         c.rd_kafka_conf_set_background_event_cb(self.cHandle, abi.C);
     }
+
+    pub fn registerForSocket(self: Self) void {
+        const abi = struct {
+            pub fn C(
+                domain: c_int,
+                @"type": c_int,
+                protocol: c_int,
+                @"opaque": ?*anyopaque,
+            ) callconv(.C) c_int {
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+                    if (handler.socketCallbackFn) |cb| {
+                        // Send as a proper Zig types only!.
+                        return cb(handler.ptr, domain, @"type", protocol);
+                    }
+                }
+
+                // TODO: what to return when we can't get a handle above?
+                return 0;
+            }
+        };
+        c.rd_kafka_conf_set_socket_cb(self.cHandle, abi.C);
+    }
+
+    // pub fn registerForConnect(self: Self) void {
+    //     const abi = struct {
+    //         pub fn C() callconv(.C) void {}
+    //     };
+    //     c.rd_kafka_conf_set_connect_cb(self.cHandle, abi.C);
+    // }
+
+    // pub fn registerForClose(self: Self) void {
+    //     const abi = struct {
+    //         pub fn C() callconv(.C) void {}
+    //     };
+    //     c.rd_kafka_conf_set_closesocket_cb(self.cHandle, abi.C);
+    // }
+
+    // pub fn registerForOpen(self: Self) void {
+    //     const abi = struct {
+    //         pub fn C() callconv(.C) void {}
+    //     };
+    //     c.rd_kafka_conf_set_open_cb(self.cHandle, abi.C);
+    // }
 
     /// Duplicate the current config.
     pub fn dup(self: Self) ConfResultError!Self {

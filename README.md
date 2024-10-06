@@ -80,6 +80,11 @@ pub fn main() !void {
     - [x] consume callback
     - [x] background event callback
     - [x] throttle callback
+    - [x] set socket callback
+    - [ ] set connect callback
+    - [ ] close socket callback
+    - [ ] open callback
+    - [ ] various others
   - [ ] Admin client (not-started)
   - [ ] Variations on Consumers/Producers (such as high-level consumer) (not-started)
   - [ ] etc. as there's a lot more to librdkafka than meets the eye just like Transformers!

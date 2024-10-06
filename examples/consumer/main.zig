@@ -35,6 +35,7 @@ const AppHandler = struct {
     deliveryReportMessageCalls: usize = 0,
     backgroundEventCalls: usize = 0,
     throttleCalls: usize = 0,
+    socketCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
@@ -111,6 +112,20 @@ const AppHandler = struct {
         });
     }
 
+    fn socket(ptr: *anyopaque, domain: i32, @"type": i32, protocol: i32) i32 {
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        self.socketCalls += 1;
+
+        std.log.info("socket calls: {d}, domain: {d}, type: {d}, protocol: {d}", .{
+            self.socketCalls,
+            domain,
+            @"type",
+            protocol,
+        });
+
+        return 0;
+    }
+
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
@@ -122,6 +137,7 @@ const AppHandler = struct {
             .deliveryReportMessageCallbackFn = deliveryReportMessage,
             .backgroundEventCallbackFn = backgroundEvent,
             .throttleCallbackFn = throttle,
+            .socketCallbackFn = socket,
         };
     }
 };
@@ -161,6 +177,7 @@ pub fn main() !void {
     conf.registerForDeliveryReportMessage();
     conf.registerForBackgroundEvent();
     conf.registerForThrottle();
+    conf.registerForSocket();
 
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");

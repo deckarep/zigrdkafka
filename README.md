@@ -71,7 +71,15 @@ pub fn main() !void {
   - [x] Message (in-progress)
   - [x] Raw Consumer (in-progress, but works!)
   - [x] Raw Producer (in-progress, but works!)
-  - [ ] Support for librdkafka callbacks (not-started)
+  - [ ] Full support for librdkafka callbacks (in-progress)
+    - [x] logging callback
+    - [x] delivery report messages callback
+    - [x] rebalance callback
+    - [x] offset commits callback
+    - [x] stats callback
+    - [x] consume callback
+    - [x] background event callback
+    - [x] throttle callback
   - [ ] Admin client (not-started)
   - [ ] Variations on Consumers/Producers (such as high-level consumer) (not-started)
   - [ ] etc. as there's a lot more to librdkafka than meets the eye just like Transformers!

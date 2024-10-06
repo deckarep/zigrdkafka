@@ -52,15 +52,24 @@ const ConfStatsCallbackCABI = ?*const fn (
     @"opaque": ?*anyopaque,
 ) callconv(.C) c_int;
 
+pub const ConfDeliveryReportMessageCallback = ?*const fn (ptr: *anyopaque, msg: zrdk.Message) void;
+const ConfDeliveryReportMessageCallbackCABI = ?*const fn (
+    rk: ?*c.rd_kafka_t,
+    rkmessage: [*c]const c.rd_kafka_message_t,
+    @"opaque": ?*anyopaque,
+) callconv(.C) void;
+
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
 pub const CallbackHandler = struct {
     ptr: *anyopaque,
+
     logCallbackFn: ConfLogCallback,
     consumeCallbackFn: ConfConsumeCallback,
     rebalanceCallbackFn: ConfRebalanceCallback,
     offsetCommitsCallbackFn: ConfOffsetCommitsCallback,
     statsCallbackFn: ConfStatsCallback,
+    deliveryReportMessageCallbackFn: ConfDeliveryReportMessageCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -80,6 +89,10 @@ pub const CallbackHandler = struct {
 
     fn statsCallback(self: CallbackHandler, json: []const u8) void {
         return self.statsCallback(self.ptr, json);
+    }
+
+    fn deliveryReportMessageCallback(self: CallbackHandler, msg: zrdk.Message) void {
+        return self.deliveryReportMessageCallback(self.ptr, msg);
     }
 };
 
@@ -215,6 +228,38 @@ pub const Conf = struct {
         c.rd_kafka_conf_set_opaque(self.cHandle, ptr);
     }
 
+    /// Set delivery report callback for the config. The delivery report callback
+    /// will be called once for each message accepted by Producer#produce. The
+    /// Message will have #error set in the event of a producer error.
+    ///
+    /// The callback is called when a message is successfully produced or if
+    /// librdkafka encountered a permanent failure.
+    ///
+    /// NOTE: Producer only.
+    pub fn registerForDeliveryReportMessage(self: Self) void {
+        const abi = struct {
+            pub fn C(rk: ?*c.rd_kafka_t, rkmessage: [*c]const c.rd_kafka_message_t, @"opaque": ?*anyopaque) callconv(.C) void {
+                _ = rk;
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+
+                    // The callback is optional.
+                    if (handler.deliveryReportMessageCallbackFn) |cb| {
+                        const msgWrapped = zrdk.Message.wrap(@constCast(rkmessage));
+                        cb(handler.ptr, msgWrapped);
+                    }
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForConsuming.
+                    );
+                }
+            }
+        };
+        c.rd_kafka_conf_set_dr_msg_cb(self.cHandle, abi.C);
+    }
+
     /// Set the logging callback. By default librdkafka will print to stderr (or
     /// syslog if configured).
     ///
@@ -225,7 +270,7 @@ pub const Conf = struct {
         const abi = struct {
             pub fn C(rk: ?*const c.struct_rd_kafka_s, level: c_int, facility: [*c]const u8, msg: [*c]const u8) callconv(.C) void {
                 if (c.rd_kafka_opaque(rk)) |h| {
-                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    // This callback DOES NOT have the opaque param (unlike the logger cb), so we harvest it directly.
                     const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
 
                     // TODO: this callback should be sending Zig friendly types so the callback signature needs to change.

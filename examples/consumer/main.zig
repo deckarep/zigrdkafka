@@ -32,6 +32,7 @@ const AppHandler = struct {
     rebalanceCalls: usize = 0,
     offsetCommitCalls: usize = 0,
     statsCalls: usize = 0,
+    deliveryReportMessageCalls: usize = 0,
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
         const self: *AppHandler = @alignCast(@ptrCast(ptr));
@@ -76,6 +77,16 @@ const AppHandler = struct {
         });
     }
 
+    fn deliveryReportMessage(ptr: *anyopaque, msg: zrdk.Message) void {
+        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        self.deliveryReportMessageCalls += 1;
+
+        std.log.info("deliveryReportMessage calls: {d}, msg: {s}", .{
+            self.deliveryReportMessageCalls,
+            msg.payloadAsString(),
+        });
+    }
+
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
@@ -84,6 +95,7 @@ const AppHandler = struct {
             .rebalanceCallbackFn = rebalance,
             .offsetCommitsCallbackFn = offsetCommits,
             .statsCallbackFn = stats,
+            .deliveryReportMessageCallbackFn = deliveryReportMessage,
         };
     }
 };
@@ -120,6 +132,7 @@ pub fn main() !void {
     conf.registerForRebalance();
     conf.registerForOffsetCommits();
     conf.registerForStats();
+    conf.registerForDeliveryReportMessage();
 
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");

@@ -41,6 +41,7 @@ const csmr = @import("Consumer.zig");
 const uuid = @import("Uuid.zig");
 const hndl = @import("Handle.zig");
 const pm = @import("PartitionMetadata.zig");
+const ev = @import("Event.zig");
 
 pub const Handle = hndl.Handle;
 pub const BrokerMetadata = bm.BrokerMetadata;
@@ -52,6 +53,7 @@ pub const ConfLogCallback = cfg.ConfLogCallback;
 pub const ConfRebalanceCallback = cfg.ConfRebalanceCallback;
 pub const ConfDeliveryReportMessageCallback = cfg.ConfDeliveryReportMessageCallback;
 pub const ConfEventFlags = cfg.EventFlags;
+pub const Event = ev.Event;
 pub const GroupInfo = gi.GroupInfo;
 pub const GroupList = gl.GroupList;
 pub const GroupMemberInfo = gmi.GroupMemberInfo;

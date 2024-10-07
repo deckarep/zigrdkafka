@@ -81,8 +81,8 @@ pub fn main() !void {
     - [x] background event callback
     - [x] throttle callback
     - [x] set socket callback
-    - [ ] set connect callback
-    - [ ] close socket callback
+    - [x] set connect callback
+    - [x] close socket callback
     - [ ] open callback
     - [ ] various others
   - [ ] Admin client (not-started)

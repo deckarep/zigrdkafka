@@ -37,6 +37,7 @@ const AppHandler = struct {
     throttleCalls: usize = 0,
     socketCalls: usize = 0,
     connectCalls: usize = 0,
+    closeCalls: usize = 0,
 
     fn into(ptr: *anyopaque) *AppHandler {
         return @alignCast(@ptrCast(ptr));
@@ -136,11 +137,23 @@ const AppHandler = struct {
         self.connectCalls += 1;
 
         std.log.info("connect calls: {d}, sockfd: {d}, sockaddr: {*}, addrLen: {d}, brokerID: {s}", .{
-            self.socketCalls,
+            self.connectCalls,
             sockfd,
             sockaddr,
             addrLen,
             brokerID,
+        });
+
+        return 0;
+    }
+
+    fn close(ptr: *anyopaque, sockfd: i32) i32 {
+        const self = AppHandler.into(ptr);
+        self.closeCalls += 1;
+
+        std.log.info("close calls: {d}, sockfd: {d}", .{
+            self.closeCalls,
+            sockfd,
         });
 
         return 0;
@@ -159,6 +172,7 @@ const AppHandler = struct {
             .throttleCallbackFn = throttle,
             .socketCallbackFn = socket,
             .connectCallbackFn = connect,
+            .closeCallbackFn = close,
         };
     }
 };
@@ -200,6 +214,7 @@ pub fn main() !void {
     conf.registerForThrottle();
     conf.registerForSocket();
     conf.registerForConnect();
+    conf.registerForClose();
 
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");

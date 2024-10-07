@@ -38,6 +38,7 @@ const AppHandler = struct {
     socketCalls: usize = 0,
     connectCalls: usize = 0,
     closeCalls: usize = 0,
+    openCalls: usize = 0,
 
     fn into(ptr: *anyopaque) *AppHandler {
         return @alignCast(@ptrCast(ptr));
@@ -159,6 +160,20 @@ const AppHandler = struct {
         return 0;
     }
 
+    fn open(ptr: *anyopaque, pathName: []const u8, flags: i32, mode: u16) i32 {
+        const self = AppHandler.into(ptr);
+        self.openCalls += 1;
+
+        std.log.info("open calls: {d}, pathName: {s}, flags: {d}, mode: {d}", .{
+            self.openCalls,
+            pathName,
+            flags,
+            mode,
+        });
+
+        return 0;
+    }
+
     pub fn handler(self: *AppHandler) zrdk.CallbackHandler {
         return .{
             .ptr = self,
@@ -173,6 +188,7 @@ const AppHandler = struct {
             .socketCallbackFn = socket,
             .connectCallbackFn = connect,
             .closeCallbackFn = close,
+            .openCallbackFn = open,
         };
     }
 };
@@ -215,6 +231,7 @@ pub fn main() !void {
     conf.registerForSocket();
     conf.registerForConnect();
     conf.registerForClose();
+    conf.registerForOpen();
 
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");

@@ -70,6 +70,12 @@ pub const ConfThrottleCallback = ?*const fn (ptr: *anyopaque, brokerName: []cons
 pub const ConfSocketCallback = ?*const fn (ptr: *anyopaque, domain: i32, @"type": i32, protocol: i32) i32;
 pub const ConfConnectCallback = ?*const fn (ptr: *anyopaque, sockfd: i32, sockaddr: *const anyopaque, addrLen: i32, brokerID: []const u8) i32;
 pub const ConfCloseCallback = ?*const fn (ptr: *anyopaque, sockfd: i32) i32;
+pub const ConfOpenCallback = ?*const fn (
+    ptr: *anyopaque,
+    pathName: []const u8,
+    flags: i32,
+    mode: u16,
+) i32;
 
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
@@ -87,6 +93,7 @@ pub const CallbackHandler = struct {
     socketCallbackFn: ConfSocketCallback,
     connectCallbackFn: ConfConnectCallback,
     closeCallbackFn: ConfCloseCallback,
+    openCallbackFn: ConfOpenCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -130,6 +137,10 @@ pub const CallbackHandler = struct {
 
     fn closeCallback(self: CallbackHandler, sockfd: i32) i32 {
         return self.closeCallback(self.ptr, sockfd);
+    }
+
+    fn openCallback(self: CallbackHandler, pathName: []const u8, flags: i32, mode: u16) i32 {
+        return self.openCallback(self.ptr, pathName, flags, mode);
     }
 };
 
@@ -607,6 +618,9 @@ pub const Conf = struct {
         c.rd_kafka_conf_set_connect_cb(self.cHandle, abi.C);
     }
 
+    /// Register the close socket callback.
+    ///
+    /// Close a socket (optionally opened with socket_cb())
     pub fn registerForClose(self: Self) void {
         const abi = struct {
             pub fn C(sockfd: c_int, @"opaque": ?*anyopaque) callconv(.C) c_int {
@@ -631,12 +645,42 @@ pub const Conf = struct {
         c.rd_kafka_conf_set_closesocket_cb(self.cHandle, abi.C);
     }
 
-    // pub fn registerForOpen(self: Self) void {
-    //     const abi = struct {
-    //         pub fn C() callconv(.C) void {}
-    //     };
-    //     c.rd_kafka_conf_set_open_cb(self.cHandle, abi.C);
-    // }
+    /// Register the open callback.
+    ///
+    /// The open callback is responsible for opening the file specified by pathname, flags and mode.
+    /// The file shall be opened with CLOEXEC set in a racefree fashion, if possible.
+    ///
+    /// Default:
+    ///on linux: racefree CLOEXEC
+    /// others : non-racefree CLOEXEC
+    pub fn registerForOpen(self: Self) void {
+        const abi = struct {
+            pub fn C(
+                pathName: [*c]const u8,
+                flags: c_int,
+                mode: c.mode_t,
+                @"opaque": ?*anyopaque,
+            ) callconv(.C) c_int {
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+                    if (handler.openCallbackFn) |cb| {
+                        // Send as a proper Zig types only!.
+                        return cb(handler.ptr, std.mem.span(pathName), flags, mode);
+                    } else {
+                        @panic(
+                            \\The opaque is not set on either the Consumer or Producer. 
+                            \\This must be set before you invoke registerForOpen.
+                        );
+                    }
+                }
+
+                // TODO: what to return if it wasn't handled above.
+                return -1;
+            }
+        };
+        c.rd_kafka_conf_set_open_cb(self.cHandle, abi.C);
+    }
 
     /// Duplicate the current config.
     pub fn dup(self: Self) ConfResultError!Self {

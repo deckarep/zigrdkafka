@@ -83,7 +83,7 @@ pub fn main() !void {
     - [x] set socket callback
     - [x] set connect callback
     - [x] close socket callback
-    - [ ] open callback
+    - [x] open callback
     - [ ] various others
   - [ ] Admin client (not-started)
   - [ ] Variations on Consumers/Producers (such as high-level consumer) (not-started)

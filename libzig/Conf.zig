@@ -68,6 +68,7 @@ const ConfBackgroundEventCallbackCABI = ?*const fn (
 
 pub const ConfThrottleCallback = ?*const fn (ptr: *anyopaque, brokerName: []const u8, brokerID: i32, throttleMS: i32) void;
 pub const ConfSocketCallback = ?*const fn (ptr: *anyopaque, domain: i32, @"type": i32, protocol: i32) i32;
+pub const ConfConnectCallback = ?*const fn (ptr: *anyopaque, sockfd: i32, sockaddr: *const anyopaque, addrLen: i32, brokerID: []const u8) i32;
 
 /// KafkaDispatcher is any "interface" to anything that knows how to be a Kafka Callback.
 /// Further reading: https://www.openmymind.net/Zig-Interfaces/
@@ -83,6 +84,7 @@ pub const CallbackHandler = struct {
     backgroundEventCallbackFn: ConfBackgroundEventCallback,
     throttleCallbackFn: ConfThrottleCallback,
     socketCallbackFn: ConfSocketCallback,
+    connectCallbackFn: ConfConnectCallback,
 
     fn logCallback(self: CallbackHandler, logLevel: i32, facility: *const u8, msg: *const u8) void {
         return self.logCallbackFn(self.ptr, logLevel, facility, msg);
@@ -118,6 +120,10 @@ pub const CallbackHandler = struct {
 
     fn socketCallback(self: CallbackHandler, domain: i32, @"type": i32, protocol: i32) c_int {
         return self.socketCallback(self.ptr, domain, @"type", protocol);
+    }
+
+    fn connectCallback(self: CallbackHandler, sockfd: i32, sockaddr: *const anyopaque, addrLen: i32, brokerID: []const u8) i32 {
+        return self.connectCallback(self.ptr, sockfd, sockaddr, addrLen, brokerID);
     }
 };
 
@@ -539,6 +545,11 @@ pub const Conf = struct {
                         // Send as a proper Zig types only!.
                         return cb(handler.ptr, domain, @"type", protocol);
                     }
+                } else {
+                    @panic(
+                        \\The opaque is not set on either the Consumer or Producer. 
+                        \\This must be set before you invoke registerForSocket.
+                    );
                 }
 
                 // TODO: what to return when we can't get a handle above?
@@ -548,12 +559,47 @@ pub const Conf = struct {
         c.rd_kafka_conf_set_socket_cb(self.cHandle, abi.C);
     }
 
-    // pub fn registerForConnect(self: Self) void {
-    //     const abi = struct {
-    //         pub fn C() callconv(.C) void {}
-    //     };
-    //     c.rd_kafka_conf_set_connect_cb(self.cHandle, abi.C);
-    // }
+    /// Register the connect callback.
+    ///
+    /// The connect callback is responsible for connecting socket sockfd to peer address addr.
+    /// The id field contains the broker identifier.
+    /// connect_cb shall return 0 on success (socket connected) or an error number (errno) on error.
+    pub fn registerForConnect(self: Self) void {
+        const abi = struct {
+            pub fn C(
+                sockfd: c_int,
+                sockaddr: [*c]const c.struct_sockaddr,
+                addrlen: c_int,
+                id: [*c]const u8,
+                @"opaque": ?*anyopaque,
+            ) callconv(.C) c_int {
+                if (@"opaque") |h| {
+                    // This callback DOES have the opaque param (unlike the logger cb), so we harvest it directly.
+                    const handler: *zrdk.CallbackHandler = @alignCast(@ptrCast(h));
+                    if (handler.connectCallbackFn) |cb| {
+                        // Send as a proper Zig types only!.
+                        return cb(
+                            handler.ptr,
+                            sockfd,
+                            sockaddr,
+                            addrlen,
+                            std.mem.span(id),
+                        );
+                    } else {
+                        @panic(
+                            \\The opaque is not set on either the Consumer or Producer. 
+                            \\This must be set before you invoke registerForConnect.
+                        );
+                    }
+                }
+
+                // TODO: connect_cb shall return 0 on success (socket connected) or an error number (errno) on error.
+                return -1;
+            }
+        };
+
+        c.rd_kafka_conf_set_connect_cb(self.cHandle, abi.C);
+    }
 
     // pub fn registerForClose(self: Self) void {
     //     const abi = struct {

@@ -36,22 +36,27 @@ const AppHandler = struct {
     backgroundEventCalls: usize = 0,
     throttleCalls: usize = 0,
     socketCalls: usize = 0,
+    connectCalls: usize = 0,
+
+    fn into(ptr: *anyopaque) *AppHandler {
+        return @alignCast(@ptrCast(ptr));
+    }
 
     fn log(ptr: *anyopaque, level: i32, fac: *const u8, buf: *const u8) void {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         self.logCalls += 1;
         std.log.info("log calls: {d}, level: {d}, fac: {s}, buf:{s}", .{ self.logCalls, level, fac, buf });
     }
 
     fn consume(ptr: *anyopaque, msg: zrdk.Message, @"opaque": ?*anyopaque) void {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         _ = @"opaque"; // I don't think this callback api needs to provide opaque behavior, for any of the callbacks.
         self.consumeCalls += 1;
         std.log.info("consume calls: {d}, topic: {s}", .{ self.consumeCalls, msg.topic().name() });
     }
 
     fn rebalance(ptr: *anyopaque, err: i32, topicPartitionList: zrdk.TopicPartitionList) void {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         self.rebalanceCalls += 1;
         std.log.info("rebalance calls: {d}, err:{d}, topicPartitionList: {?}", .{
             self.rebalanceCalls,
@@ -61,7 +66,7 @@ const AppHandler = struct {
     }
 
     fn offsetCommits(ptr: *anyopaque, err: i32, topicPartitionList: zrdk.TopicPartitionList) void {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         self.offsetCommitCalls += 1;
         std.log.info("offset commit calls: {d}, err:{d}, topicPartitionList: {?}", .{
             self.offsetCommitCalls,
@@ -71,7 +76,7 @@ const AppHandler = struct {
     }
 
     fn stats(ptr: *anyopaque, json: []const u8) void {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         self.statsCalls += 1;
 
         std.log.info("stats calls: {d}, json: {s}", .{
@@ -81,7 +86,7 @@ const AppHandler = struct {
     }
 
     fn deliveryReportMessage(ptr: *anyopaque, msg: zrdk.Message) void {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         self.deliveryReportMessageCalls += 1;
 
         std.log.info("deliveryReportMessage calls: {d}, msg: {s}", .{
@@ -91,7 +96,7 @@ const AppHandler = struct {
     }
 
     fn backgroundEvent(ptr: *anyopaque, evt: zrdk.Event) void {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         self.backgroundEventCalls += 1;
 
         std.log.info("backgroundEvent calls: {d}, msg: {s}", .{
@@ -101,7 +106,7 @@ const AppHandler = struct {
     }
 
     fn throttle(ptr: *anyopaque, brokerName: []const u8, brokerID: i32, throttleMS: i32) void {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         self.throttleCalls += 1;
 
         std.log.info("throttle calls: {d}, brokerName: {s}, brokerID: {d}, throttleMS: {d}", .{
@@ -113,7 +118,7 @@ const AppHandler = struct {
     }
 
     fn socket(ptr: *anyopaque, domain: i32, @"type": i32, protocol: i32) i32 {
-        const self: *AppHandler = @alignCast(@ptrCast(ptr));
+        const self = AppHandler.into(ptr);
         self.socketCalls += 1;
 
         std.log.info("socket calls: {d}, domain: {d}, type: {d}, protocol: {d}", .{
@@ -121,6 +126,21 @@ const AppHandler = struct {
             domain,
             @"type",
             protocol,
+        });
+
+        return 0;
+    }
+
+    fn connect(ptr: *anyopaque, sockfd: i32, sockaddr: *const anyopaque, addrLen: i32, brokerID: []const u8) i32 {
+        const self = AppHandler.into(ptr);
+        self.connectCalls += 1;
+
+        std.log.info("connect calls: {d}, sockfd: {d}, sockaddr: {*}, addrLen: {d}, brokerID: {s}", .{
+            self.socketCalls,
+            sockfd,
+            sockaddr,
+            addrLen,
+            brokerID,
         });
 
         return 0;
@@ -138,6 +158,7 @@ const AppHandler = struct {
             .backgroundEventCallbackFn = backgroundEvent,
             .throttleCallbackFn = throttle,
             .socketCallbackFn = socket,
+            .connectCallbackFn = connect,
         };
     }
 };
@@ -178,6 +199,7 @@ pub fn main() !void {
     conf.registerForBackgroundEvent();
     conf.registerForThrottle();
     conf.registerForSocket();
+    conf.registerForConnect();
 
     try conf.set("bootstrap.servers", "localhost:9092");
     try conf.set("group.id", "zig-cli-consumer");

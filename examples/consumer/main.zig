@@ -40,7 +40,7 @@ const AppHandler = struct {
     closeCalls: usize = 0,
     openCalls: usize = 0,
 
-    fn into(ptr: *anyopaque) *AppHandler {
+    inline fn into(ptr: *anyopaque) *AppHandler {
         return @alignCast(@ptrCast(ptr));
     }
 

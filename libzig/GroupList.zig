@@ -41,13 +41,11 @@ pub const GroupList = struct {
     pub fn groupAt(self: Self, idx: usize) ?zrdk.GroupInfo {
         const cnt = self.count();
 
-        // If the idx is within range...
-        if (idx <= (cnt - 1)) {
-            const item = &self.cHandle.groups[idx];
-            return zrdk.GroupInfo.wrap(item);
-        }
+        // Ensure that idx is within the valid range
+        std.debug.assert(idx < cnt);
 
-        return null;
+        const item = &self.cHandle.groups[idx];
+        return zrdk.GroupInfo.wrap(item);
     }
 
     pub inline fn count(self: Self) usize {

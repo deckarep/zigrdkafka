@@ -216,6 +216,23 @@ pub const Consumer = struct {
         _ = c.rd_kafka_unsubscribe(self.cHandle);
     }
 
+    /// Retrieve committed offsets for topics + partitions. The offset field for
+    /// each TopicPartition in list will be set to the stored offset or
+    /// RD_KAFKA_OFFSET_INVALID in case there was no stored offset for that
+    /// partition. The error field is set if there was an error with the
+    /// TopicPartition.
+    pub fn committed(self: Self, args: struct {
+        topicPartitionList: zrdk.TopicPartitionList,
+        timeoutMS: i32 = 1000,
+    }) void {
+        // TODO: handle and return error.
+        _ = c.rd_kafka_committed(
+            self.cHandle,
+            args.topicPartitionList.Handle(),
+            args.timeoutMS,
+        );
+    }
+
     /// Commit the set of offsets from the given TopicPartitionList.
     /// offsets is the set of topic+partition with offset (and maybe metadata) to
     /// be commited. If offsets is nil the current partition assignment set will
